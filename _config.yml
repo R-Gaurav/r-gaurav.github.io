@@ -5,3 +5,4 @@ description: "A place where I share my findings with you!"
 baseurl: ""
 url: "http://r-gaurav.github.io"
 github_username:  r-gaurav
+disqus_shortname: https-r-gaurav-github-io
