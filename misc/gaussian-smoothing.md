@@ -25,4 +25,4 @@ A 1D Gaussian Kernel is mathematically defined as below:
 
 ![](/assets/gauss1dEqn.svg)
 
-where \(\sigma(\sum_iw_ix_i + b)\)
+where \\(\sigma(\sum_iw_ix_i + b)\\)
