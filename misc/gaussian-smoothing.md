@@ -21,4 +21,8 @@ voxels. Through Gaussian Smoothing of data we achieve the same. It also leads to
 [Matched Filtering](https://crewes.org/ForOurSponsors/ResearchReports/2002/2002-46.pdf) process.
 
 ### Gaussian Kernel
-A 1D Gaussian Kernel is mathematically defined as: 
+A 1D Gaussian Kernel is mathematically defined as below:
+
+![](/assets/gauss1dEqn.svg)
+
+where \(\sigma(\sum_iw_ix_i + b)\)
