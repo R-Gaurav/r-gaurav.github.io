@@ -4,6 +4,7 @@ tags: research paper
 
 This short blog introduces the project to estimate train delays in India. It is first of its kind and the [research paper](https://ieeexplore.ieee.org/document/8570014) has been accepted at IEEE ITSC-2018.
 
+
 In India, most of us have travelled via trains at one point or another in life. Due to large and complex railway networks, trains often get delayed at stations. What if there was a way we could predict the delays of trains at their in-line stations? This would certainly help us in planning our journey well and also the businesses which depend on railways.
 
 Therefore we designed an N-Order Markov Late Minutes Prediction Framework (N-OMLMPF) using Random Forest Regressors (and Ridge Regressors) to predict the late minutes at a desired in-line station, given a train number and data of its journey. The Regressors learned from past journey data of trains. In fact, the N-OMLMPF was developed such that it could predict the delays of those trains too which were not used for training the Regressors, thus the prediction framework was train-generic.
