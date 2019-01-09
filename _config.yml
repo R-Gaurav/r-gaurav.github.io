@@ -7,3 +7,4 @@ url: "http://r-gaurav.github.io"
 github_username:  r-gaurav
 author: R Gaurav
 markdown: kramdown
+future: true
