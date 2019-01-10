@@ -11,7 +11,7 @@ Therefore we designed an N-Order Markov Late Minutes Prediction Framework (N-OML
 Note: Details presented here are very brief and more information could be found at the [arxiv version of our paper](https://arxiv.org/pdf/1806.02825.pdf).
 
 ## Data and Analysis
-We collected journey data for 135 trains from [railwayapi.com](https://railwayapi.com) over a period of 2 years; from March 2016 to February 2018. After pre-processing, we found that delay at a station is governed by delays at N number of stations previous to it, the month of journey, the type of train etc..
+We collected journey data for 135 trains from [railwayapi.com](https://railwayapi.com) over a period of 2 years; from March 2016 to February 2018. After pre-processing and analysis, we found that delay at a station is governed by delays at N number of stations previous to it, the month of journey, the type of train etc..
 
 ## Regressor models training
 Since late minutes at a station are continuous values, we opted for Regressor models to learn from past data of delays at stations. _That's fine, but what's Markov doing here?_ Well... as mentioned earlier, delay at a station depends on N number of stations previous to it, and this is where _Markov_ comes in picture. As per Markov Process definition, the outcome is dependent only on current state and not on any previous states. However if the outcome is dependent on N previous states, it's called N-Order Markov Process.
