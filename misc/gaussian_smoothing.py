@@ -1,6 +1,8 @@
 #
 # This file implements gaussian smoothing.
 #
+# Author: Ramashish Gaurav
+#
 
 import matplotlib.pyplot as plt
 import numpy as np
