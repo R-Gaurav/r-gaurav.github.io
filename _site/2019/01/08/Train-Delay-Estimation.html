@@ -1,3 +1,60 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/assets/css/style.css?v=7212612729d914b86d895e5ba4fe3a441db5d196">
+
+<!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>Train Delay Estimation | Ramashish Gaurav’s Blog</title>
+<meta name="generator" content="Jekyll v3.8.5" />
+<meta property="og:title" content="Train Delay Estimation" />
+<meta name="author" content="R Gaurav" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="This short blog introduces the Open-source project “Train Delay Estimation” to estimate train delays in India. It is first of its kind and the research paper has been accepted at IEEE ITSC-2018." />
+<meta property="og:description" content="This short blog introduces the Open-source project “Train Delay Estimation” to estimate train delays in India. It is first of its kind and the research paper has been accepted at IEEE ITSC-2018." />
+<link rel="canonical" href="http://localhost:4000/2019/01/08/Train-Delay-Estimation.html" />
+<meta property="og:url" content="http://localhost:4000/2019/01/08/Train-Delay-Estimation.html" />
+<meta property="og:site_name" content="Ramashish Gaurav’s Blog" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2019-01-08T00:00:00+05:30" />
+<script type="application/ld+json">
+{"author":{"@type":"Person","name":"R Gaurav"},"url":"http://localhost:4000/2019/01/08/Train-Delay-Estimation.html","headline":"Train Delay Estimation","dateModified":"2019-01-08T00:00:00+05:30","datePublished":"2019-01-08T00:00:00+05:30","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/2019/01/08/Train-Delay-Estimation.html"},"description":"This short blog introduces the Open-source project “Train Delay Estimation” to estimate train delays in India. It is first of its kind and the research paper has been accepted at IEEE ITSC-2018.","@type":"BlogPosting","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+
+
+    <script type="text/javascript" async
+  src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML">
+</script>
+
+  </head>
+
+  <body>
+
+    <header>
+      <div class="container">
+        <a href="https://r-gaurav.github.io"><h1>Ramashish Gaurav's Blog</h1></a>
+        <h2>A place where I share my findings with you!</h2>
+
+        <section id="downloads">
+          
+          <!--<a href="https://github.com/R-Gaurav/r-gaurav.github.io" class="btn btn-github"><span class="icon"></span>View on GitHub</a>-->
+          <a href="https://github.com/R-Gaurav" class="btn btn-github"><span class="icon"></span>View on GitHub</a>
+          <a href="https://scholar.google.co.in/citations?user=wcTHd4gAAAAJ&hl=en" class="btn btn-github"><span class="icon"></span>View on Google Scholar</a>
+          <a href="https://www.linkedin.com/in/ramashish-gaurav/" class="btn btn-github"><span class="icon"></span>View on LinkedIn</a>
+          <a href="https://nbviewer.jupyter.org/github/R-Gaurav/r-gaurav.github.io/blob/master/misc/Ramashish_Gaurav_CV.pdf" class="btn btn-github"><span class="icon"></span>View Curriculum vitae</a>
+        </section>
+      </div>
+    </header>
+
+    <div class="container">
+      <section id="main_content">
+        <small>8 January 2019</small>
+<h1>Train Delay Estimation</h1>
+
+<p class="view">by R Gaurav</p>
+
 <p>This short blog introduces the Open-source project “Train Delay Estimation” to estimate train delays in India. It is first of its kind and the <a href="https://ieeexplore.ieee.org/document/8570014">research paper</a> has been accepted at IEEE ITSC-2018.</p>
 
 <p>In India, most of us have travelled via trains at one point or another in life. Due to large and complex railway networks, trains often get delayed at stations. What if there was a way we could predict the delays of trains at their in-line stations? This would certainly help us in planning our journey well and also the businesses which depend on railways.</p>
@@ -7,7 +64,7 @@
 <p>Note: Details presented here are very brief and more information could be found at the <a href="https://arxiv.org/pdf/1806.02825.pdf">arxiv version of our paper</a>.</p>
 
 <h2 id="data-and-analysis">Data and Analysis</h2>
-<p>We collected journey data for 135 trains from <a href="https://railwayapi.com">railwayapi.com</a> over a period of 2 years; from March 2016 to February 2018. After pre-processing, we found that delay at a station is governed by delays at N number of stations previous to it, the month of journey, the type of train etc..</p>
+<p>We collected journey data for 135 trains from <a href="https://railwayapi.com">railwayapi.com</a> over a period of 2 years; from March 2016 to February 2018. After pre-processing and analysis, we found that delay at a station is governed by delays at N number of stations previous to it, the month of journey, the type of train etc..</p>
 
 <h2 id="regressor-models-training">Regressor models training</h2>
 <p>Since late minutes at a station are continuous values, we opted for Regressor models to learn from past data of delays at stations. <em>That’s fine, but what’s Markov doing here?</em> Well… as mentioned earlier, delay at a station depends on N number of stations previous to it, and this is where <em>Markov</em> comes in picture. As per Markov Process definition, the outcome is dependent only on current state and not on any previous states. However if the outcome is dependent on N previous states, it’s called N-Order Markov Process.</p>
@@ -22,3 +79,36 @@
 <p>We would highly appreciate your contributions to scale this framework India-wide. Please visit <a href="https://github.com/R-Gaurav/train-delay-estimation">our github page</a> for more information.</p>
 
 <p>Thank you for stopping by!</p>
+
+
+
+  <small>tags: <em>research</em> - <em>paper</em></small>
+
+
+<div id="disqus_thread"></div>
+<script>
+
+/**
+*  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+*  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables*/
+/*
+var disqus_config = function () {
+this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
+this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+};
+*/
+(function() { // DON'T EDIT BELOW THIS LINE
+var d = document, s = d.createElement('script');
+s.src = 'https://https-r-gaurav-github-io.disqus.com/embed.js';
+s.setAttribute('data-timestamp', +new Date());
+(d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+      </section>
+    </div>
+
+    
+</body>
+</html>
