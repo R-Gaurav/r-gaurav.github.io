@@ -51,7 +51,7 @@ where $$V(t)$$ is the neuron's membrane potential over time, $$V_{rest}$$ is the
 
 After assuming the values for $$V_{rest}$$ and $$R$$ to be $$0$$ and $$1$$ respectively, and addition of the equation which describes the behavior of membrane potential when it reaches the threshold, the LIF neuron (to be simulated next) is described as follows.
 
- $$\frac{dV(t)}{dt} = \frac{J(t) - V(t)}{\tau_{RC}}  \quad \quad \text{ when } V(t) < V_{th} $$
+$$\frac{dV(t)}{dt} = \frac{J(t) - V(t)}{\tau_{RC}}  \quad \quad \text{ when } V(t) < V_{th} $$
 
  $$V(t) \leftarrow 0 \quad \quad  \quad \quad \text{ when } V(t) > V_{th} \text{ for } t_{th} < t < t_{th} + \tau_{ref} $$
 
