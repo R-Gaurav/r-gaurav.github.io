@@ -17,7 +17,7 @@ Ever wondered why do we have activation functions in the NNs? Well... the most c
 You might be wondering..., what is a Spiking Neuron? Unsurprisingly, Spiking Neurons are neuron models which generate or fire action potentials (aka spikes) upon receiving an input current (or so called stimulus); unlike artificial neurons in NNs which produce a continuous numerical output after feeding the summation of weighted inputs and bias into an activation function $$\phi()$$ (shown in the picture below).
 
 <center><img src="artificial_neuron.jpg" alt="artificial_neuron" width="600"/>
-<figcaption>Artificial Neuron - Example model from {% cite OLIVEIRA2017 %}</figcaption></center>
+<figcaption>Artificial Neuron - Example model from <a href="https://www.scielo.br/scielo.php?pid=S2179-10742017000300628&script=sci_arttext">Oliveira et al.</a></figcaption></center>
 
 In the upcoming sections I will briefly introduce spiking neurons, followed by describing the mathematical model of Leaky Integrate and Fire (LIF) neurons. Next, I will simulate a LIF neuron and the develop the intuition behind activation functions.
 
@@ -25,7 +25,7 @@ In the upcoming sections I will briefly introduce spiking neurons, followed by d
 
 Adding to the description above, spiking neurons are mathematical abstractions of biological neurons which mimic their physiological behaviour more realistically than artificial neurons. To learn about spiking neurons let us start by understanding the action potentials. They are waves of membrane's potential difference (between the intracellular and extracellular environment) propagating through the neuron's axon. Physiologically, a biological neuron fires action potentials upon receiving a stimulus. This stimulus can be a sensory input from the environment or even an incoming action potential. In absence of stimulus the neuron generally rests at a `resting potential` which is around $$-70$$ millivolt ($$mV$$). However, each time a neuron receives a stimulus its membrane potential rises. But, does this rise in membrane potential necessarily mean that an action potential has been generated? No. To better understand this let us get a bird's eye view of the membrane potential dynamics in the picture below. Please note that the numerals mentioned in the picture do not reflect the actual measurements of neuron's biophysical values. Also, there are no sharp edges in the actual waveform.
 
-<center><img src="SN_MP.png" alt="SN_MP" width="600"/><figcaption>Membrane Potential Dynamics - Picture from {% cite alnajjar2006autonomous %}</figcaption></center>
+<center><img src="SN_MP.png" alt="SN_MP" width="600"/><figcaption>Membrane Potential Dynamics - Picture from <a href="https://www.jstage.jst.go.jp/article/softscis/2006/0/2006_0_207/_pdf">Alnajjar et al.</a></figcaption></center>
 
 The `y-axis` denotes the membrane potential and the `x-axis` denotes the time in milliseconds. The first upward arrow denotes an incoming action potential (or spike), and this results in the rise of membrane potential. Each incoming spike increases the neuron's membrane potential; and it is only when its membrane potential reaches a certain threshold (say $$V_{th}$$, generally around $$-55mV$$), it fires an action potential. In the above picture the threshold ($$V_{th}$$) is denoted by value $$0.1$$. As you can see, immediately after firing an action potential (the smaller left pointing arrow at the top) the neuron's membrane potential falls below 0 and it enters into a so called `refractory` state (the bigger left pointing arrow at the bottom). During refractory period it cannot fire another spike; unless and until it receives a stimulus much stronger than a required normal. The refracotry period generally lasts for $$2ms$$ to $$4ms$$ of time. In the picture, the refractory period is shown to last for around $$6ms$$. Note that once the refractory period is over, the neuron is ready to spike again!
 
@@ -347,6 +347,3 @@ As you can see above, the plot of `Sigmoid Activation Function` (although it's H
 For the curious mind, feel free to play with the parameters $$\tau_{ref}$$, $$\tau_{RC}$$ etc. to observe different firing patterns. You will observe that as you decrease the $$\tau_{RC}$$ the firing pattern of spiking neuron becomes more like sigmoid and as you increase the $$\tau_{RC}$$, the firing pattern becomes more like ReLU. Can you guess what the firing pattern will look like at a sufficient high value of $$\tau_{RC}$$ e.g. at $$\tau_{RC} = 5$$?
 
 ------------
-
-# References
-{% bibliography --cited %}
