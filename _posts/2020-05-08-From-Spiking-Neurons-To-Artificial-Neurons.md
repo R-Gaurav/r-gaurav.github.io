@@ -32,7 +32,7 @@ Physiologically, a biological neuron fires action potentials upon receiving a st
 
 <center><img src="SN_MP.png" alt="SN_MP" width="600"/><figcaption>Membrane Potential Dynamics - Picture credit: <a href="https://www.jstage.jst.go.jp/article/softscis/2006/0/2006_0_207/_pdf">Alnajjar et al.</a></figcaption></center>
 
-The `y-axis` denotes the membrane potential and the `x-axis` denotes the time in milliseconds. The first upward arrow denotes an incoming action potential (or spike), and this results in the rise of membrane potential. Each incoming spike increases the neuron's membrane potential, and it is only when its membrane potential reaches a certain threshold (say $$V_{th}$$, generally around $$-55mV$$), it fires an action potential. In the above picture the threshold ($$V_{th}$$) is denoted by value $$0.1$$. As you can see, immediately after firing an action potential (the smaller left-pointing arrow at the top) the neuron's membrane potential falls below 0 and it enters into a so-called `refractory` state (the bigger left-pointing arrow at the bottom).
+The `y-axis` denotes the membrane potential and the `x-axis` denotes the time in milliseconds. The first upward arrow denotes an incoming action potential (or spike), and this results in the rise of membrane potential. Each incoming spike increases the neuron's membrane potential, and it is only when its membrane potential reaches a certain threshold (say $$V_{th}$$, generally around $$-55mV$$), it fires an action potential. In the above picture the threshold ($$V_{th}$$) is denoted by value $$0.1$$. As you can see, immediately after firing an action potential (the smaller left-pointing arrow at the top) the neuron's membrane potential falls below $$0$$ and it enters into a so-called `refractory` state (the bigger left-pointing arrow at the bottom).
 
 >`During the refractory period a neuron cannot fire another spike; unless and until it receives a stimulus much stronger than a required normal.`
 
@@ -201,7 +201,7 @@ def plot_spikes(J, spike_times, T, dt):
     ax.set_ylabel("Spike")
 ```
 
-What about plotting neuron's membrane potential $$V(t)$$? Let us plot them too for a better understanding.
+What about plotting neuron's membrane potential $$V(t)$$? Let us plot it too for a better understanding.
 
 
 ```python
