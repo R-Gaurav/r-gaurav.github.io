@@ -2,7 +2,7 @@
 tags: research paper
 ---
 
-This short blog introduces the Open-source project "Train Delay Estimation" to estimate train delays in India. It is first of its kind and the [research paper](https://ieeexplore.ieee.org/document/8570014) has been accepted at IEEE ITSC-2018.
+This short blog article introduces the Open-source project "Train Delay Estimation" to estimate train delays in India. It is first of its kind and the [research paper](https://ieeexplore.ieee.org/document/8570014) has been accepted at IEEE ITSC-2018.
 
 In India, most of us have travelled via trains at one point or another in life. Due to large and complex railway networks, trains often get delayed at stations. What if there was a way we could predict the delays of trains at their in-line stations? This would certainly help us in planning our journey well and also the businesses which depend on railways.
 

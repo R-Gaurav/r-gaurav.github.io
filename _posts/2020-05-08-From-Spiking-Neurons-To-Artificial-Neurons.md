@@ -2,18 +2,18 @@
 tags: blog spiking-neuron
 layout: post
 ---
-This blog talks about the intuition behind activation functions which form an integral part in the design of Neural Net (NN for short) architectures.
+This blog article talks about the intuition behind activation functions which form an integral part in the design of Neural Net (NN for short) architectures.
 
-By the end of this blog you will learn:
+By the end of this article you will learn:
 * What is a spiking neuron?
 * How to simulate a Leaky Integrate and Fire neuron (- a spiking neuron model)?
 * What is the intuition behind activation functions?
 
-It is going to be a bit lengthy read; hence, please have some time available. This blog is intended for folks interested in Computational Neuroscience and connectionist AI.
-Familiarity with neuroscience topics is not a prerequisite here. I have tried to write this blog as lucid as possible.
+It is going to be a bit lengthy read; hence, please have some time available. This article is intended for folks interested in Computational Neuroscience and connectionist AI.
+Familiarity with neuroscience topics is not a prerequisite here. I have tried to write this article as lucid as possible.
 
 # Introduction
-Ever wondered why do we have activation functions in the NNs? Well... the most common (and correct) answer is to introduce non-linearity in the network model, which helps in representing and computing non-linear functions. The absence of activation functions in NNs would effectively equate the network model to a matrix multiplication of weights and inputs. Thus, reducing the network to compute only Linear Transformations. In this article, I will delve deeper into the theory behind activation functions. And as this blog's title goes, I will start with a spiking neuron model and then gradually build the intuition behind activation functions e.g. ReLU, Sigmoid, etc. in an artificial neuron.
+Ever wondered why do we have activation functions in the NNs? Well... the most common (and correct) answer is to introduce non-linearity in the network model, which helps in representing and computing non-linear functions. The absence of activation functions in NNs would effectively equate the network model to a matrix multiplication of weights and inputs. Thus, reducing the network to compute only Linear Transformations. In this article, I will delve deeper into the theory behind activation functions. And as this article's title goes, I will start with a spiking neuron model and then gradually build the intuition behind activation functions e.g. ReLU, Sigmoid, etc. in an artificial neuron.
 
 You might be wondering..., what is a Spiking Neuron? Unsurprisingly, Spiking Neurons are neuron models which generate or fire action potentials (aka spikes) upon receiving an input current (or so-called stimulus); unlike artificial neurons in NNs which produce a continuous numerical output after feeding the summation of weighted inputs and bias into an activation function $$\phi()$$ (shown in the picture below).
 
@@ -301,7 +301,7 @@ As you can see between $$0.04s$$ and $$0.06s$$, there is a small time period (he
 You might have guessed that as we would increase the input current, the firing rate would also increase. And yes, it's true, but partly. After a certain value of input current, the firing rate saturates. In this simulation, it will saturate at $$329Hz$$ at an input of $$J=20$$ or higher when simulated for $$T = 1s$$. I will leave you with why. You will figure it out!
 
 # Intuition behind Activation Functions
-All the above work can now be culminated to get the intuition behind the activation function, the very purpose of this blog. As you know, the activation function outputs a value after accepting an input. This input and output is actually an abstract representation of `stimulus` and `firing rate` respectively. Further simulations will show how. I will feed an input current to the function `simulate_spiking_neuron()` for a period of $$1s$$ and record the output firing rate. This will be done for each integral input current in the range \[$$0$$, $$10$$\]. Let us write the necessary code for it.
+All the above work can now be culminated to get the intuition behind the activation function, the very purpose of this article. As you know, the activation function outputs a value after accepting an input. This input and output is actually an abstract representation of `stimulus` and `firing rate` respectively. Further simulations will show how. I will feed an input current to the function `simulate_spiking_neuron()` for a period of $$1s$$ and record the output firing rate. This will be done for each integral input current in the range \[$$0$$, $$10$$\]. Let us write the necessary code for it.
 
 
 ```python
