@@ -163,7 +163,7 @@ print("-"*50)
 
 # Creating the Nengo-DL network
 
-The following code creates and returns a Nengo-DL network; either an ANN or an SNN depending on value of `mode` (in the function below). Note that while training (i.e. `mode` = "train"), we do **not** replace the ReLU neurons with spiking neurons in the TF model  while calling the `nengo_dl.Converter()` API, hence an ANN is returned. However, while inferencing (i.e. `mode` = "test"), we replace the ReLU neurons with spiking neurons in the `nengo_dl.Converter()` API, hence an SNN is returned.
+The following code creates and returns a Nengo-DL network; either an ANN or an SNN depending on value of `mode` (in the function below). Note that while training (i.e. `mode` = "train"), we do **not** replace the ReLU neurons with spiking neurons in the TF model  while calling the `nengo_dl.Converter()` API, hence, an ANN is returned. However, while inferencing (i.e. `mode` = "test"), we replace the ReLU neurons with spiking neurons in the `nengo_dl.Converter()` API, hence, an SNN is returned.
 
 Note that the `scale_firing_rates` parameter is assigned a value in both the `mode`s.
 
@@ -227,7 +227,7 @@ We use the MNIST dataset for our experiments. For such a small dataset, we reall
 
 ## For Training
 
-While creating the batches of training data, we need to create two dictionaries: one for the input data (e.g. training images), and another for the output data (i.e. training labels). In the input dictionary, the keys are the layers' name. The key with the model's input layer's name has training images' data as value, and another key with the name "n_steps" has a matrix of ones as value - we need to present the training images for only time-step. These two keys are important and should be mentioned in the input dictionary. In case the model has layers with `use_bias=True` (which is "True" by default in the TF APIs for layers), we need to append those layers' name with ".0.bias" and mention them as keys against matrices of ones as values (in fact, values can be any, I chose ones). Those matrices are of shape `(batch_size, number_of_channels, 1)` for Conv layers, and of shape `(batch_size, number_of_neurons, 1)` for Dense layers. Note that such matrices are defined only for the layers with neurons.
+While creating the batches of training data, we need to create two dictionaries: one for the input data (i.e. training images), and another for the output data (i.e. training labels). In the input dictionary, the keys are the layers' name. The key with the model's input layer's name has training images' data as value, and another key with the name "n_steps" has a matrix of ones as value (of shape: `(batch_size, 1)`) - we need to present the training images for only one time-step. These two keys are important and should be mentioned in the input dictionary. In case the model has layers with `use_bias=True` (which is "True" by default in the TF APIs for layers), we need to append those layers' name with ".0.bias" and mention them as keys against matrices of ones as values (in fact, matrix values can be any, I chose ones). Those matrices are of shape `(batch_size, number_of_channels, 1)` for Conv layers, and of shape `(batch_size, number_of_neurons, 1)` for Dense layers. Note that such matrices are defined only for the layers with neurons.
 
 ## For Inference
 
@@ -335,7 +335,6 @@ with nengo_dl.Simulator(ndl_model.net, minibatch_size=train_batch_size, seed=0,
 
 print("All Epochs Done! Training Completed.")
 ```
-
     /home/rgaurav/miniconda3/envs/latest-nengo-tf/lib/python3.7/site-packages/nengo_dl/converter.py:588: UserWarning: Activation type <function softmax at 0x2b65ab157d40> does not have a native Nengo equivalent; falling back to a TensorNode
       "falling back to a TensorNode" % activation
     /home/rgaurav/miniconda3/envs/latest-nengo-tf/lib/python3.7/site-packages/nengo_dl/simulator.py:1773: UserWarning: Number of elements (1) in ['str'] does not match number of Probes (3); consider using an explicit input dictionary in this case, so that the assignment of data to objects is unambiguous.
@@ -357,12 +356,11 @@ print("All Epochs Done! Training Completed.")
     600/600 [==============================] - 6s 10ms/step - loss: 0.0137 - probe_loss: 0.0137 - probe_accuracy: 0.9956
     All Epochs Done! Training Completed.
 
-
 After training for $$8$$ epochs, I achieved a training accuracy of $$99.56\%$$. You might get a similar accuracy score.
 
 # Inferencing from the Nengo-DL Network
 
-Now that we have trained and saved the weights of the Nengo-DL network i.e. the ANN, let us convert it to an SNN. We can do this by simply replacing the ReLU neurons in the ANN with spiking ones; note that we also mention the `synapse` value as well as the `scale_firing_rates` value (in the `nengo_dl.Converter()` API in the `get_nengo_dl_model()` function) while conversion to an SNN. We can then load the trained parameters into the SNN and predict on the test data passed in batches, and simultaneously collect the spikes and calculate accuracy. Note that to obtain a label for a test image, we need to execute the network for a certain number of time-steps for each image; this is taken care of while creating the test data - recollect tiling each test image. Here we execute the network for $$60$$ time-steps.
+Now that we have trained and saved the weights of the Nengo-DL network i.e. the ANN, let us convert it to an SNN. We can do this by simply replacing the ReLU neurons in the ANN with spiking ones; note that we also mention the `synapse` value as well as the `scale_firing_rates` value (in the `nengo_dl.Converter()` API in the `get_nengo_dl_model()` function) while converting to an SNN. We can then load the trained parameters into the SNN and predict on the test data passed in batches, and simultaneously collect the spikes and calculate accuracy. Note that to obtain a label for a test image, we need to execute the network for a certain number of time-steps for each image; this is taken care of while creating the test data - recollect tiling each test image. Here we execute the network for `n_steps` = $$60$$ time-steps.
 
 
 ```python
