@@ -4,10 +4,10 @@ layout: post
 ---
 This article is about my [research paper](https://arxiv.org/abs/2205.07076) (accepted at IJCNN 2022) where two methods of spiking-MaxPooling in Convolutional Spiking Neural Networks (SNNs) are proposed; both these methods are entirely deployable on the Loihi neuromorphic hardware.
 
-#### Learning objectives:
+#### Learning objective:
 * How to do spiking-MaxPooling in Convolutional SNNs?
 
-This article only serves as a Proof-of-Concept (PoC) demonstration of the two proposed methods with [minimal code](https://github.com/R-Gaurav/SpikingMaxPooling/blob/main/misc/Paper_324_Proof_Of_Concept_Demo.ipynb) to deploy them on Loihi. For more details on the entire suite of experiments, results, and analysis please go through the paper linked above. For complete code of the experiments please visit my Github [repo](https://github.com/R-Gaurav/SpikingMaxPooling).
+This article only serves as a Proof-of-Concept (PoC) demonstration of the two proposed methods with [minimal code](https://github.com/R-Gaurav/SpikingMaxPooling/blob/main/misc/Paper_324_Proof_Of_Concept_Demo.ipynb) to deploy them on Loihi. For more details on the entire suite of experiments, results, and analysis please go through the paper linked above. For the complete code of my experiments please visit my Github [repo](https://github.com/R-Gaurav/SpikingMaxPooling).
 
 ## What's the Problem Statement?
 
@@ -19,7 +19,7 @@ Note that in the absence of such neuromorphic-hardware friendly spiking-MaxPooli
 
 # Methods of spiking-MaxPooling
 
-I now present the theory and PoC demonstration of our proposed methods of spiking-MaxPooling, namely: **MJOP** and **AVAM**. Both of these methods rely on the representation of the artificial neuron `activations` as `currents` in the SNNs, obtained after filtering the spikes from the spiking neurons. Let's consider the case of $$2\times2$$ MaxPooling, where for one such pooling window, we need to find the $$max(U_1, U_2, U_3, U_4)$$ where $$U_i$$s are the input current values. I used [NengoLoihi](https://www.nengo.ai/nengo-loihi/) backend to deploy both these methods - **MJOP** and **AVAM** on the Loihi neuromorphic hardware. For the benchmark purpose, I obtained the `True Max U` = $$max(U_1, U_2, U_3, U_4)$$ from a different network run on CPU, and compared the outputs of the **MJOP** and **AVAM** methods with `True Max U`. The evaluation criteria is to visually check if the **MJOP** and **AVAM** outputs closely match the $$max(.)$$ output!
+I now present the theory and PoC demonstration of our proposed methods of spiking-MaxPooling, namely: **MJOP** and **AVAM**. Both of these methods rely on the representation of the artificial neuron `activations` as `currents` in the SNNs, obtained after filtering the spikes from the spiking neurons. Let's consider the case of $$2\times2$$ MaxPooling, where for one such pooling window, we need to find the $$max(U_1, U_2, U_3, U_4)$$ where $$U_i$$s are the input current values. I used [NengoLoihi](https://www.nengo.ai/nengo-loihi/) backend to deploy both these methods - **MJOP** and **AVAM** on the Loihi neuromorphic hardware. For the benchmark purpose, I obtained the `True Max U` = $$max(U_1, U_2, U_3, U_4)$$ from a different network run on CPU, and compared the outputs of the **MJOP** and **AVAM** methods with `True Max U`. The evaluation criterion is to visually check if the **MJOP** and **AVAM** outputs closely match the $$max(.)$$ output!
 
 ## MAX join-Op (MJOP)
 
@@ -36,10 +36,10 @@ In a MC neuron, the Single-Compartment (SC) units are connected in a binary tree
 |:--:|
 | <b> Fig taken from our paper - <i>MJOP Net</i> for $$2\times2$$ MaxPooling </b>|
 
-The topmost root neuron receives a running $$max(.)$$ of all the input currents, and then it spikes at a rate corresponding to the maximum computed current $$U_{max}$$. Since it outputs spikes (and not the maximum current) at a rate directly proportional to the maximum input current $$U_{max}$$, we need to _**scale**_ the filtered output spikes to match it to the true maximum current. Had the root neuron been able to communicate current to the next connected neuron on Loihi, outputting a simple $$max(.)$$ of currents would have been possible; but this is not the case here. Note that, the required number of compartments in the MC neuron is same as the number of elements in the MaxPooling window. Also note that the value of _**scale**_ depends on a number of factors, e.g. the root neuron's configuration and the maximum input current to the root neuron. More details on how to choose the _**scale**_ value are in our paper.
+The topmost root neuron receives a running $$max(.)$$ of all the input currents, and then it spikes at a rate corresponding to the maximum computed current $$U_{max}$$. Since it outputs spikes (and not the maximum current $$U_{max}$$) at a rate directly proportional to the maximum input current $$U_{max}$$, we need to _**scale**_ the filtered output spikes to match it to the true maximum current `True Max U` (note `True Max U` = $$U_{max}$$). Had the root neuron been able to communicate current to the next connected neuron on Loihi, outputting a simple $$max(.)$$ of currents would have been possible; but this is not the case here. Note that, the required number of compartments in the MC neuron is same as the number of elements in the MaxPooling window. Also note that the value of _**scale**_ depends on a number of factors, e.g. the root neuron's configuration and the maximum input current to the root neuron. More details on how to choose the _**scale**_ value are in our paper.
 
 ### $$2\times2$$ spiking-MaxPooling PoC Code
-Since NengoLoihi uses the NxCore APIs (and not the NxNet APIs), I had to use the low level NxCore APIs to configure the `Ensemble` of neurons to a MC neuron on the Loihi hardware. In short, for a $$2\times2$$ MaxPooling, you need to create an `Ensemble` $$4$$ neurons, then access the NengoLoihi object mapping the `Ensemble` to the Loihi board, and then configure the individual neurons (now considered as "compartments" on the Loihi board) to create a MC neuron with `MAX` join-Op between the compartments. I named such a network of compartments as the **MJOP** Net - in the figure above.
+Since NengoLoihi uses the NxCore APIs (and not the NxNet APIs), I had to use the low level NxCore APIs to configure the `Ensemble` of neurons to a MC neuron on the Loihi hardware. In short, for a $$2\times2$$ MaxPooling, you need to create an `Ensemble` of $$4$$ neurons, then access the NengoLoihi object mapping the `Ensemble` to the Loihi board, and then configure the individual neurons (now considered as "compartments" on the Loihi board) to create a MC neuron with `MAX` join-Op between the compartments. I named such a network of compartments as the **MJOP** Net - in the figure above.
 
 Following is the minimal PoC code for creating the **MJOP** Net:
 
@@ -128,19 +128,19 @@ where $$a$$, $$b$$, $$c$$, and $$d$$ can be the currents $$U_1$$, $$U_2$$, $$U_3
 
 ### Description
 
-The average term $$\frac{a+b}{2}$$ can be easily implemented on Loihi, as it is a simple linear operation. Recollect that AveragePooling can be easily implemented through the weighted connections on Loihi. The challenge is to implement the non-linear absolute value function i.e. \|.\| on Loihi with the linear weighted connections and non-linear spiking-neurons. How to do that?
+The average term $$\frac{a+b}{2}$$ can be easily implemented on Loihi, as it is a simple linear operation. Recollect that AveragePooling can be easily implemented through the weighted connections on Loihi. The challenge is to implement the non-linear absolute value function i.e. \|.\| on Loihi with the linear weighted connections and the non-linear spiking-neurons. How to do that?
 
-### | . | approximation
+### | . | Approximation
 
 One fine day, while staring at the plot of \|.\| function (shown below), it struck to us that we can configure two spiking-neurons such that their `Tuning Curves` would look similar to the graph of \|x\|.
 
 | <img src="mod_x.png" width="600" height="350" /> |
 |:--:|
-| <b> \|x\| Plot </b>|
+| <b> \|x\| Graph Plot </b>|
 
 What are the `Tuning Curves`?
 
->`Tuning Curves visually describe the activation profile of spiking neurons for an input stimuli.`
+>`Tuning Curves visually describe the activation profile of spiking neurons for an input stimulus`.`
 
 Therefore, we configured an `Ensemble` of two Integrate & Fire (IF) spiking neurons - one with a positive encoder value of $$1$$, another with a negative encoder value of $$-1$$ (figure below), i.e. one neuron fires for a positive input (while the other does not), and the another neuron fires for a negative input (while the other does not).
 
@@ -152,7 +152,7 @@ Therefore, we configured an `Ensemble` of two Integrate & Fire (IF) spiking neur
 
 Note that, no matter the sign of the input, such a system of two neurons outputs a positive firing rate upon stimulated with a signed input. However, we need to normalize the output firing rate to obtain the absolute value of the input $$x$$.
 
-There's a caveat though, for a near accurate approximation of \|x\|, the representational `radius` of the `Ensemble` neurons should be equal to the `magnitude` of the $x$, i.e. `radius` = \|x\|. _Whaaat??_ How do we then set the `radius` parameter of the `Ensemble` of spiking neurons when we do not know what $$x$$ will be? It turns out that for binary spiking neurons, there are some heuristics we can use to effectively set the `radius` value! More details about these heuristics can be found in our paper.
+There's a caveat though, for a near accurate approximation of \|x\|, the representational `radius` of the `Ensemble` neurons should be equal to the `magnitude` of the $$x$$, i.e. `radius` = \|x\|. _Whaaat??_ How do we then set the `radius` parameter of the `Ensemble` of spiking neurons when we do not know what $$x$$ will be? It turns out that for binary spiking neurons, there are some heuristics we can use to effectively set the `radius` value! More details about these heuristics can be found in our paper.
 
 ### $$max(a, b)$$ Approximation
 
