@@ -1,0 +1,424 @@
+I"?�<p>In this blog article I will talk about building a Spiking Neural Network (SNN) for image classification using Nengo-DL - a python library for developing spiking neurons based deep learning models.</p>
+
+<p>By the end of this article you will have learned:</p>
+
+<ul>
+  <li>What are spiking networks? And why spiking networks?</li>
+  <li>How to build spiking networks in Nengo-DL?</li>
+  <li>How to do inference with spiking networks in Nengo-DL?</li>
+  <li>How to visualize the neuron spikes?</li>
+</ul>
+
+<p>Basic prior knowledge of spiking networks will be helpful, but not strictly required. Let’s begin by answering the first question.</p>
+
+<h2 id="what-are-spiking-networks-and-why-spiking-networks">What are spiking networks? And why spiking networks?</h2>
+
+<p>Spiking networks are the ones where the neuron activity computation is done via Spiking Neurons. For reference, my <a href="https://r-gaurav.github.io/2020/05/08/From-Spiking-Neurons-To-Artificial-Neurons.html">previous article</a> gives a short introduction to the <code class="language-plaintext highlighter-rouge">Spiking Neurons</code>. In traditional Deep Learning models we have <code class="language-plaintext highlighter-rouge">rate neurons</code> e.g. ReLU, Sigmoid, etc. which output a real valued activation (e.g. \(0.56\)). That real valued activation is synonymous to the action-potential <code class="language-plaintext highlighter-rouge">firing rate</code> of biological neurons; and the artificial neurons which are implemented to fire action-potentials (or spikes) are called Spiking Neurons. Thus, neural network models built with spiking neurons are called Spiking Neural Networks (SNNs). Ohkay.. great! But why would we like to build SNNs when there are already best performing state-of-the-art rate neuron based models? That’s because, out of a number of <a href="https://www.nature.com/articles/s41586-019-1677-2">advantages of spiking models</a>, it offers us a software framework to leverage the low power Neuromorphic Hardware (which run spiking models) for deep learning tasks; thus helping us build low power AI models for energy critical applications, e.g. electric autonomous cars. And moreover, who wouldn’t like to save <a href="https://arxiv.org/pdf/1906.02243.pdf">millions of joules of energy</a> and contribute towards a <a href="https://www.forbes.com/sites/robtoews/2020/06/17/deep-learnings-climate-change-problem/?sh=4aec0d6d6b43">green earth</a>!</p>
+
+<h2 id="how-to-build-spiking-networks-in-nengo-dl">How to build spiking networks in Nengo-DL?</h2>
+
+<p>Before we proceed building our spiking network, let’s start with a short introduction to <a href="https://www.nengo.ai/nengo-dl/introduction.html">Nengo-DL</a>. It is a relatively new Deep Learning (DL) library (actively developed and maintained by the <a href="https://appliedbrainresearch.com">Applied Brain Research</a> team) for building spiking networks which can be deployed on low power Neuromorphic Hardware. For Deep Learning use cases, it currently (as of year \(2021\)) uses TensorFlow (TF) under the hood; and this provides it a great deal of power/flexibility in training and inferencing with rate neurons and spiking neurons respectively.</p>
+
+<p>There are a number of <a href="https://www.frontiersin.org/articles/10.3389/fnins.2018.00774/full">ways</a> to build spiking networks. Training with spiking neurons is difficult due to its non-differentiability and is also not scalable to deep networks (as of now). Therefore, we generally first train our network with rate neurons and then replace each rate neuron with its spiking equivalent (along with some other modifications in the network) to build a spiking model - to be run in inference mode. In short, with respect to Nengo-DL, we will here first build a TF network and then convert it to its spiking equivalent by using the API <code class="language-plaintext highlighter-rouge">nengo_dl.Converter(model)</code> where <code class="language-plaintext highlighter-rouge">model</code> is our TF rate neuron network.</p>
+
+<p>The tutorial below was run on <code class="language-plaintext highlighter-rouge">tensorflow-gpu</code> (v\(2.2.0\)), <code class="language-plaintext highlighter-rouge">nengo</code> (v\(3.1.0\)), and <code class="language-plaintext highlighter-rouge">nengo_dl</code> (v\(3.4.0\)) and you will need these libraries to execute the code here. The installation instructions can be found <a href="https://www.nengo.ai/nengo-dl/installation.html">here</a>. Let’s begin with code now!</p>
+
+<p>We will</p>
+
+<ul>
+  <li>First build and train a TF network with ReLU neurons,</li>
+  <li>Then convert it to a spiking network using <code class="language-plaintext highlighter-rouge">nengo_dl.Converter()</code> API by replacing the ReLU neurons with <code class="language-plaintext highlighter-rouge">nengo.SpikingRectifiedLinear()</code> neurons and,</li>
+  <li>Then proceed with inference over the test data with the converted spiking network</li>
+</ul>
+
+<p>We will use CIFAR-\(10\) dataset for our experiments. Note that I have experimented on \(12\)GB GPU machine, and you might need to alter the TF <code class="language-plaintext highlighter-rouge">batch_size</code> as well as the Nengo-DL <code class="language-plaintext highlighter-rouge">batch_size</code> depending upon your GPU resources.</p>
+
+<h3 id="building-a-tf-image-classification-2d-cnn-network">Building a TF image classification 2D-CNN network</h3>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Import libraries
+</span><span class="kn">import</span> <span class="nn">matplotlib</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+<span class="kn">import</span> <span class="nn">nengo</span>
+<span class="kn">import</span> <span class="nn">nengo_dl</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="n">np</span>
+<span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="n">tf</span>
+
+<span class="c1"># Set memory growth of GPUs on your system.
+</span><span class="n">gpus</span> <span class="o">=</span> <span class="n">tf</span><span class="p">.</span><span class="n">config</span><span class="p">.</span><span class="n">experimental</span><span class="p">.</span><span class="n">list_physical_devices</span><span class="p">(</span><span class="s">"GPU"</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">gpu</span> <span class="ow">in</span> <span class="n">gpus</span><span class="p">:</span>
+  <span class="n">tf</span><span class="p">.</span><span class="n">config</span><span class="p">.</span><span class="n">experimental</span><span class="p">.</span><span class="n">set_memory_growth</span><span class="p">(</span><span class="n">gpu</span><span class="p">,</span> <span class="bp">True</span><span class="p">)</span>
+
+<span class="c1"># Load the CIFAR-10 dataset.
+</span><span class="p">(</span><span class="n">x_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">),</span> <span class="p">(</span><span class="n">x_test</span><span class="p">,</span> <span class="n">y_test</span><span class="p">)</span> <span class="o">=</span> <span class="n">tf</span><span class="p">.</span><span class="n">keras</span><span class="p">.</span><span class="n">datasets</span><span class="p">.</span><span class="n">cifar10</span><span class="p">.</span><span class="n">load_data</span><span class="p">()</span>
+<span class="n">class_names</span> <span class="o">=</span> <span class="p">[</span><span class="s">'airplane'</span><span class="p">,</span> <span class="s">'automobile'</span><span class="p">,</span> <span class="s">'bird'</span><span class="p">,</span> <span class="s">'cat'</span><span class="p">,</span> <span class="s">'deer'</span><span class="p">,</span>
+               <span class="s">'dog'</span><span class="p">,</span> <span class="s">'frog'</span><span class="p">,</span> <span class="s">'horse'</span><span class="p">,</span> <span class="s">'ship'</span><span class="p">,</span> <span class="s">'truck'</span><span class="p">]</span>
+
+<span class="c1"># Binarize/One-Hot encode the training and test labels.
+</span><span class="n">y_train</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">eye</span><span class="p">(</span><span class="mi">10</span><span class="p">)[</span><span class="n">y_train</span><span class="p">].</span><span class="n">squeeze</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">y_test</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">eye</span><span class="p">(</span><span class="mi">10</span><span class="p">)[</span><span class="n">y_test</span><span class="p">].</span><span class="n">squeeze</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Now that we have loaded the data, we can proceed with building the TF 2D-CNN network.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">get_2d_cnn_model</span><span class="p">(</span><span class="n">inpt_shape</span><span class="p">):</span>
+  <span class="s">"""
+  Returns a 2D-CNN model for image classification.
+
+  Args:
+    input_shape &lt;tuple&gt;: A tuple of 2D image shape e.g. (32, 32, 3)
+  """</span>
+  <span class="k">def</span> <span class="nf">_get_cnn_block</span><span class="p">(</span><span class="n">layer</span><span class="p">,</span> <span class="n">num_filters</span><span class="p">,</span> <span class="n">layer_objs_lst</span><span class="p">):</span>
+    <span class="n">conv</span> <span class="o">=</span> <span class="n">tf</span><span class="p">.</span><span class="n">keras</span><span class="p">.</span><span class="n">layers</span><span class="p">.</span><span class="n">Conv2D</span><span class="p">(</span>
+        <span class="n">num_filters</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="s">"same"</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="s">"relu"</span><span class="p">,</span>
+        <span class="n">kernel_initializer</span><span class="o">=</span><span class="s">"he_uniform"</span><span class="p">,</span>
+        <span class="n">kernel_regularizer</span><span class="o">=</span><span class="n">tf</span><span class="p">.</span><span class="n">keras</span><span class="p">.</span><span class="n">regularizers</span><span class="p">.</span><span class="n">l2</span><span class="p">(</span><span class="mf">0.005</span><span class="p">))(</span><span class="n">layer</span><span class="p">)</span>
+    <span class="n">avg_pool</span> <span class="o">=</span> <span class="n">tf</span><span class="p">.</span><span class="n">keras</span><span class="p">.</span><span class="n">layers</span><span class="p">.</span><span class="n">AveragePooling2D</span><span class="p">()(</span><span class="n">conv</span><span class="p">)</span>
+
+    <span class="n">layer_objs_lst</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="n">conv</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">avg_pool</span>
+
+  <span class="n">layer_objs_lst</span> <span class="o">=</span> <span class="p">[]</span> <span class="c1"># To store the layer objects to probe later in Nengo-DL
+</span>
+  <span class="n">inpt_layer</span> <span class="o">=</span> <span class="n">tf</span><span class="p">.</span><span class="n">keras</span><span class="p">.</span><span class="n">Input</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="n">inpt_shape</span><span class="p">)</span>
+  <span class="n">layer_objs_lst</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="n">inpt_layer</span><span class="p">)</span>
+
+  <span class="n">layer</span> <span class="o">=</span> <span class="n">_get_cnn_block</span><span class="p">(</span><span class="n">inpt_layer</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="n">layer_objs_lst</span><span class="p">)</span>
+  <span class="n">layer</span> <span class="o">=</span> <span class="n">_get_cnn_block</span><span class="p">(</span><span class="n">layer</span><span class="p">,</span> <span class="mi">64</span><span class="p">,</span> <span class="n">layer_objs_lst</span><span class="p">)</span>
+  <span class="n">layer</span> <span class="o">=</span> <span class="n">_get_cnn_block</span><span class="p">(</span><span class="n">layer</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="n">layer_objs_lst</span><span class="p">)</span>
+
+  <span class="n">flat</span> <span class="o">=</span> <span class="n">tf</span><span class="p">.</span><span class="n">keras</span><span class="p">.</span><span class="n">layers</span><span class="p">.</span><span class="n">Flatten</span><span class="p">()(</span><span class="n">layer</span><span class="p">)</span>
+
+  <span class="n">dense</span> <span class="o">=</span> <span class="n">tf</span><span class="p">.</span><span class="n">keras</span><span class="p">.</span><span class="n">layers</span><span class="p">.</span><span class="n">Dense</span><span class="p">(</span>
+      <span class="mi">512</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="s">"relu"</span><span class="p">,</span> <span class="n">kernel_initializer</span><span class="o">=</span><span class="s">"he_uniform"</span><span class="p">,</span>
+      <span class="n">kernel_regularizer</span><span class="o">=</span><span class="n">tf</span><span class="p">.</span><span class="n">keras</span><span class="p">.</span><span class="n">regularizers</span><span class="p">.</span><span class="n">l2</span><span class="p">(</span><span class="mf">0.005</span><span class="p">))(</span><span class="n">flat</span><span class="p">)</span>
+  <span class="n">layer_objs_lst</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="n">dense</span><span class="p">)</span>
+
+  <span class="n">output_layer</span> <span class="o">=</span> <span class="n">tf</span><span class="p">.</span><span class="n">keras</span><span class="p">.</span><span class="n">layers</span><span class="p">.</span><span class="n">Dense</span><span class="p">(</span>
+      <span class="mi">10</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="s">"softmax"</span><span class="p">,</span> <span class="n">kernel_initializer</span><span class="o">=</span><span class="s">"he_uniform"</span><span class="p">,</span>
+      <span class="n">kernel_regularizer</span><span class="o">=</span><span class="n">tf</span><span class="p">.</span><span class="n">keras</span><span class="p">.</span><span class="n">regularizers</span><span class="p">.</span><span class="n">l2</span><span class="p">(</span><span class="mf">0.005</span><span class="p">))(</span><span class="n">dense</span><span class="p">)</span>
+  <span class="n">layer_objs_lst</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="n">output_layer</span><span class="p">)</span>
+
+  <span class="n">model</span> <span class="o">=</span> <span class="n">tf</span><span class="p">.</span><span class="n">keras</span><span class="p">.</span><span class="n">Model</span><span class="p">(</span><span class="n">inputs</span><span class="o">=</span><span class="n">inpt_layer</span><span class="p">,</span> <span class="n">outputs</span><span class="o">=</span><span class="n">output_layer</span><span class="p">)</span>
+  <span class="k">return</span> <span class="n">model</span><span class="p">,</span> <span class="n">layer_objs_lst</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">model</span><span class="p">,</span> <span class="n">layer_objs_lst</span> <span class="o">=</span> <span class="n">get_2d_cnn_model</span><span class="p">((</span><span class="mi">32</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+<span class="n">model</span><span class="p">.</span><span class="n">summary</span><span class="p">()</span>
+</code></pre></div></div>
+<!--
+    Model: "model"
+    _________________________________________________________________
+    Layer (type)                 Output Shape              Param #
+    =================================================================
+    input_1 (InputLayer)         [(None, 32, 32, 3)]       0
+    _________________________________________________________________
+    conv2d (Conv2D)              (None, 32, 32, 32)        896
+    _________________________________________________________________
+    average_pooling2d (AveragePo (None, 16, 16, 32)        0
+    _________________________________________________________________
+    conv2d_1 (Conv2D)            (None, 16, 16, 64)        18496
+    _________________________________________________________________
+    average_pooling2d_1 (Average (None, 8, 8, 64)          0
+    _________________________________________________________________
+    conv2d_2 (Conv2D)            (None, 8, 8, 128)         73856
+    _________________________________________________________________
+    average_pooling2d_2 (Average (None, 4, 4, 128)         0
+    _________________________________________________________________
+    flatten (Flatten)            (None, 2048)              0
+    _________________________________________________________________
+    dense (Dense)                (None, 512)               1049088
+    _________________________________________________________________
+    dense_1 (Dense)              (None, 10)                5130
+    =================================================================
+    Total params: 1,147,466
+    Trainable params: 1,147,466
+    Non-trainable params: 0
+    _________________________________________________________________
+-->
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">model</span><span class="p">.</span><span class="nb">compile</span><span class="p">(</span>
+    <span class="n">optimizer</span><span class="o">=</span><span class="n">tf</span><span class="p">.</span><span class="n">keras</span><span class="p">.</span><span class="n">optimizers</span><span class="p">.</span><span class="n">Adam</span><span class="p">(</span><span class="n">lr</span><span class="o">=</span><span class="mf">0.001</span><span class="p">),</span>
+    <span class="n">loss</span><span class="o">=</span><span class="s">"categorical_crossentropy"</span><span class="p">,</span>
+    <span class="n">metrics</span><span class="o">=</span><span class="p">[</span><span class="s">"accuracy"</span><span class="p">])</span>
+</code></pre></div></div>
+
+<h3 id="training-the-tf-network">Training the TF network</h3>
+<p>Now that we have built and compiled our TF network, let’s proceed with batch training. Code to create the train/test data generator is below.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Create the data generator for training and testing the TF network.
+</span><span class="k">def</span> <span class="nf">get_data_generator</span><span class="p">(</span><span class="n">batch_size</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span> <span class="n">is_train</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+  <span class="s">"""
+  Returns a data generator.
+
+  Args:
+    batch_size &lt;int&gt;: Batch size of the data.
+    is_train &lt;bool&gt;: Return a generator of training data if True
+                     else of test data.
+  """</span>
+  <span class="k">if</span> <span class="n">is_train</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">x_train</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">batch_size</span><span class="p">):</span>
+      <span class="k">yield</span> <span class="p">(</span><span class="n">x_train</span><span class="p">[</span><span class="n">i</span><span class="p">:</span><span class="n">i</span><span class="o">+</span><span class="n">batch_size</span><span class="p">],</span> <span class="n">y_train</span><span class="p">[</span><span class="n">i</span><span class="p">:</span><span class="n">i</span><span class="o">+</span><span class="n">batch_size</span><span class="p">])</span>
+  <span class="k">else</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">x_test</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">batch_size</span><span class="p">):</span>
+      <span class="k">yield</span> <span class="p">(</span><span class="n">x_test</span><span class="p">[</span><span class="n">i</span><span class="p">:</span><span class="n">i</span><span class="o">+</span><span class="n">batch_size</span><span class="p">],</span> <span class="n">y_test</span><span class="p">[</span><span class="n">i</span><span class="p">:</span><span class="n">i</span><span class="o">+</span><span class="n">batch_size</span><span class="p">])</span>
+
+<span class="c1"># Train the TF network.
+</span><span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">20</span><span class="p">):</span>
+  <span class="n">batches</span> <span class="o">=</span> <span class="n">get_data_generator</span><span class="p">()</span>
+  <span class="n">model</span><span class="p">.</span><span class="n">fit</span><span class="p">(</span><span class="n">batches</span><span class="p">)</span>
+</code></pre></div></div>
+<!--
+    391/391 [==============================] - 6s 16ms/step - loss: 14.5552 - accuracy: 0.3786
+    391/391 [==============================] - 2s 6ms/step - loss: 5.4493 - accuracy: 0.5052
+    391/391 [==============================] - 2s 5ms/step - loss: 4.7392 - accuracy: 0.5633
+    391/391 [==============================] - 2s 5ms/step - loss: 4.2362 - accuracy: 0.6019
+    391/391 [==============================] - 2s 5ms/step - loss: 3.8391 - accuracy: 0.6313
+    391/391 [==============================] - 2s 5ms/step - loss: 3.4946 - accuracy: 0.6560
+    391/391 [==============================] - 2s 5ms/step - loss: 3.1952 - accuracy: 0.6769
+    391/391 [==============================] - 2s 5ms/step - loss: 2.9384 - accuracy: 0.6895
+    391/391 [==============================] - 2s 5ms/step - loss: 2.7025 - accuracy: 0.7042
+    391/391 [==============================] - 2s 5ms/step - loss: 2.4940 - accuracy: 0.7133
+    391/391 [==============================] - 2s 5ms/step - loss: 2.3019 - accuracy: 0.7225
+    391/391 [==============================] - 2s 5ms/step - loss: 2.1335 - accuracy: 0.7308
+    391/391 [==============================] - 2s 5ms/step - loss: 1.9828 - accuracy: 0.7358
+    391/391 [==============================] - 2s 5ms/step - loss: 1.8346 - accuracy: 0.7449
+    391/391 [==============================] - 2s 5ms/step - loss: 1.7240 - accuracy: 0.7453
+    391/391 [==============================] - 2s 5ms/step - loss: 1.6095 - accuracy: 0.7547
+    391/391 [==============================] - 2s 5ms/step - loss: 1.5202 - accuracy: 0.7589
+    391/391 [==============================] - 2s 5ms/step - loss: 1.4560 - accuracy: 0.7608
+    391/391 [==============================] - 2s 5ms/step - loss: 1.3792 - accuracy: 0.7667
+    391/391 [==============================] - 2s 5ms/step - loss: 1.3212 - accuracy: 0.7720
+-->
+
+<p>After training the network for \(20\) epochs, I obtained a training accuracy of \(77.20\%\). You might get something similar. Let’s evaluate our TF network.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">batches</span> <span class="o">=</span> <span class="n">get_data_generator</span><span class="p">(</span><span class="n">is_train</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">model</span><span class="p">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">batches</span><span class="p">)</span>
+</code></pre></div></div>
+<!--
+    79/79 [==============================] - 2s 26ms/step - loss: 1.5054 - accuracy: 0.7111
+-->
+
+<p>My TF network achieved an accuracy of \(71.11\%\) on the test data. Great! Now that we have trained our rate neuron based TF network and obtained a benchmark accuracy on the test data, we should next convert it to a spiking network and then evaluate it; as well as compare it against its TF equivalent.</p>
+
+<h3 id="converting-a-tf-trained-network-to-spiking-network">Converting a TF trained network to Spiking Network</h3>
+<p>Converting a TF trained network to spiking network in Nengo-DL is as simple as calling the <code class="language-plaintext highlighter-rouge">nengo_dl.Converter()</code> API, but with proper arguments to it. Recollect that our TF network has ReLU neurons in its Convolutional and Dense layers (except the last output Dense layer which has softmax activation). As mentioned earlier, we need to replace the rate neurons (i.e. ReLU neurons here) with its spiking equivalent (<code class="language-plaintext highlighter-rouge">nengo.SpikingRectifiedLinear()</code> here) to build a spiking network. However, there lies more details to it than just swapping the neurons. Spiking networks are inherently temporal in nature. That is, they are supposed to execute for a (short) period of time to output meaningful results unlike the TF networks which output a desired value instantaneously. <strong><em>Why temporal nature?</em></strong> Because the spiking networks employ spiking neurons, and the spiking neurons produce spike (equivalent of an action potential) at specific timesteps only after receiving a required input over some time to reach their threshold, similar to how our biological neurons fire. Note that the modeled spikes are discrete and short-lived events. At this point you may want to go through my <a href="https://r-gaurav.github.io/2020/05/08/From-Spiking-Neurons-To-Artificial-Neurons.html">previous article</a> on the operation of spiking neurons for a detailed understanding.</p>
+
+<p><strong><em>If the spiking networks execute over a period of time, at what instant of time do we consider it to have predicted the results?</em></strong> Answer: at the end of the simulation time. <strong><em>Ohkay… are we expecting “all” the spiking neurons to output a spike at the last instant of simulation? What if few neurons don’t spike at the last instant? Do we consider them to have ouput no result?</em></strong> Whoa.. that’s a lot of questions. Spiking neurons are not guaranteed to spike at each timestep during simulation. Therefore, we apply <strong>synpatic filtering</strong> to smooth the discrete spikes as well as to obtain a desired output value at each timestep during simulation. Thus, at the end of simulation, we have some output (which could be \(0\)) from each of the neurons. To leverage synaptic filtering we mention a non-zero value of <code class="language-plaintext highlighter-rouge">synapse</code> parameter in the <code class="language-plaintext highlighter-rouge">nengo_dl.Converter()</code> API. This value corresponds to the time constant of the default low pass filter in Nengo-DL. Note that a high <code class="language-plaintext highlighter-rouge">synapse</code> time constant will lead a spiking neuron to lag in reaching the expected output (with respect to the trained network) and a low <code class="language-plaintext highlighter-rouge">synapse</code> time constant will leave its output noisier.</p>
+
+<p>Now, since the output of a spiking neuron depends upon its spike firing rate, what if the neurons fire spikes lazily (which could be due to a number of reasons, including the magnitude of the input value to it)? The output of the spiking neuron won’t be updated frequently, leading to a performance loss. This can be prevented by increasing the firing rate of spiking neurons, which can be done by mentioning a high value of <code class="language-plaintext highlighter-rouge">scale_firing_rates</code> parameter in the <code class="language-plaintext highlighter-rouge">nengo_dl.Converter()</code> API. Internally, Nengo-DL scales the input to the neurons by <code class="language-plaintext highlighter-rouge">scale_firing_rates</code> and then divides the output of the neurons by <code class="language-plaintext highlighter-rouge">scale_firing_rates</code> to maintain the same overall output (irrespective of scaling). As you may have guessed, this operation is valid only for the linear activation neurons (e.g. ReLU). Note that high <code class="language-plaintext highlighter-rouge">scale_firing_rates</code> value will… although result in spiking network behave similar to the rate network, it will lose the spiking benefit of low power Neuromorphic Hardware (due to high spiking activity) and small <code class="language-plaintext highlighter-rouge">scale_firing_rates</code> value will result in poor performance.</p>
+
+<p>Now let’s build our spiking network. We will swap the ReLU neurons with <code class="language-plaintext highlighter-rouge">nengo.SpikingRectifiedLinear()</code> neurons, along with mentioning a synaptic time constant of \(0.005\) and set the <code class="language-plaintext highlighter-rouge">scale_firing_rates</code> parameter to \(20\). Following code does it.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Get the spiking network.
+</span><span class="n">sfr</span> <span class="o">=</span> <span class="mi">20</span>
+<span class="n">ndl_model</span> <span class="o">=</span> <span class="n">nengo_dl</span><span class="p">.</span><span class="n">Converter</span><span class="p">(</span>
+    <span class="n">model</span><span class="p">,</span>
+    <span class="n">swap_activations</span><span class="o">=</span><span class="p">{</span>
+        <span class="n">tf</span><span class="p">.</span><span class="n">keras</span><span class="p">.</span><span class="n">activations</span><span class="p">.</span><span class="n">relu</span><span class="p">:</span> <span class="n">nengo</span><span class="p">.</span><span class="n">SpikingRectifiedLinear</span><span class="p">()},</span>
+    <span class="n">scale_firing_rates</span><span class="o">=</span><span class="n">sfr</span><span class="p">,</span>
+    <span class="n">synapse</span><span class="o">=</span><span class="mf">0.005</span><span class="p">,</span>
+    <span class="n">inference_only</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+</code></pre></div></div>
+<!--
+    /home/rgaurav/miniconda3/envs/latest-nengo-tf/lib/python3.7/site-packages/nengo_dl/converter.py:588: UserWarning: Activation type <function softmax at 0x2ad093f9ab90> does not have a native Nengo equivalent; falling back to a TensorNode
+      "falling back to a TensorNode" % activation
+-->
+
+<p>More details about the usage of <code class="language-plaintext highlighter-rouge">nengo_dl.Converter()</code> API, effects of its parameters, and much more can be found in <a href="https://www.nengo.ai/nengo-dl/examples/keras-to-snn.html">this excellent tutorial</a>. Note that here I am converting the TF trained model on the go, although you can also save the weights of the model and load it later, thereby calling the <code class="language-plaintext highlighter-rouge">nengo_dl.Converter()</code> API on it. Now that we have a trained spiking network ready, let’s proceed with inference.</p>
+
+<h2 id="how-to-do-inference-in-nengo-dl">How to do inference in Nengo-DL?</h2>
+
+<p>For inferencing with a Nengo-DL spiking network, as mentioned earlier, we need to execute it for a certain period of time and then look at the output of the network at the last timestep of the simulation (Note: For a robust output, you can as well take an average of the network’s output over a small window of the last few timesteps to smooth over the jittering effect). However, here too lies a small caveat; smaller simulation time will lead to poor performance and a large simulation time will deem the application of SNN ineffective due to latency in its predictions (although this would improve accuracy). For our purpose here, we will simulate the network for \(30\) timesteps (where each timestep is \(1ms\) by default in Nengo-DL), thus our image recognition model observes the input images for \(30ms\) of time before finally deciding on its label (note the similarity with the biological visual perception). To bring this into effect, we will have to tile each test image \(30\) times (done in the function <code class="language-plaintext highlighter-rouge">get_nengo_compatible_test_data_generator()</code> below).</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Tile the test images.
+</span><span class="k">def</span> <span class="nf">get_nengo_compatible_test_data_generator</span><span class="p">(</span><span class="n">batch_size</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">n_steps</span><span class="o">=</span><span class="mi">30</span><span class="p">):</span>
+  <span class="s">"""
+  Returns a test data generator of tiled (i.e. repeated) images.
+
+  Args:
+    batch_size &lt;int&gt;: Number of data elements in each batch.
+    n_steps &lt;int&gt;: Number of timesteps for which the test data has to
+                   be repeated.
+  """</span>
+  <span class="n">num_images</span> <span class="o">=</span> <span class="n">x_test</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+  <span class="c1"># Flatten the images
+</span>  <span class="n">reshaped_x_test</span> <span class="o">=</span> <span class="n">x_test</span><span class="p">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">num_images</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+  <span class="c1"># Tile/Repeat them for `n_steps` times.
+</span>  <span class="n">tiled_x_test</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">tile</span><span class="p">(</span><span class="n">reshaped_x_test</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_steps</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+
+  <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">num_images</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">):</span>
+    <span class="k">yield</span> <span class="p">(</span><span class="n">tiled_x_test</span><span class="p">[</span><span class="n">i</span><span class="p">:</span><span class="n">i</span><span class="o">+</span><span class="n">batch_size</span><span class="p">],</span> <span class="n">y_test</span><span class="p">[</span><span class="n">i</span><span class="p">:</span><span class="n">i</span><span class="o">+</span><span class="n">batch_size</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>Now we have our trained spiking network in place along with the test data generator ready, let’s proceed with inference. However, let’s set up some probes first to feed in the batch-wise test images, receive the output predictions, and collect the spikes of the first convolutional layer and the penultimate dense layer. You can modify the code below to collect spikes of other layers too, but keep in mind that this will increase the memory consumption.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Get the probes for Input, first Conv, and the Output layers.
+</span><span class="n">ndl_mdl_inpt</span> <span class="o">=</span> <span class="n">ndl_model</span><span class="p">.</span><span class="n">inputs</span><span class="p">[</span><span class="n">layer_objs_lst</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="c1"># Input layer is Layer 0.
+</span><span class="n">ndl_mdl_otpt</span> <span class="o">=</span> <span class="n">ndl_model</span><span class="p">.</span><span class="n">outputs</span><span class="p">[</span><span class="n">layer_objs_lst</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span> <span class="c1"># Output layer is last.
+</span><span class="k">with</span> <span class="n">ndl_model</span><span class="p">.</span><span class="n">net</span><span class="p">:</span>
+  <span class="n">nengo_dl</span><span class="p">.</span><span class="n">configure_settings</span><span class="p">(</span><span class="n">stateful</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span> <span class="c1"># Optimize simulation speed.
+</span>  <span class="c1"># Probe for the first Conv layer.
+</span>  <span class="n">first_conv_probe</span> <span class="o">=</span> <span class="n">nengo</span><span class="p">.</span><span class="n">Probe</span><span class="p">(</span><span class="n">ndl_model</span><span class="p">.</span><span class="n">layers</span><span class="p">[</span><span class="n">layer_objs_lst</span><span class="p">[</span><span class="mi">1</span><span class="p">]])</span>
+  <span class="c1"># Probe for penultimate dense layer.
+</span>  <span class="n">penltmt_dense_probe</span> <span class="o">=</span> <span class="n">nengo</span><span class="p">.</span><span class="n">Probe</span><span class="p">(</span><span class="n">ndl_model</span><span class="p">.</span><span class="n">layers</span><span class="p">[</span><span class="n">layer_objs_lst</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]])</span>
+</code></pre></div></div>
+
+<h3 id="code-to-do-inference-in-nengo-dl">Code to do inference in Nengo-DL</h3>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">n_steps</span> <span class="o">=</span> <span class="mi">30</span> <span class="c1"># Number of timesteps
+</span><span class="n">batch_size</span> <span class="o">=</span> <span class="mi">100</span>
+<span class="n">collect_spikes_output</span> <span class="o">=</span> <span class="bp">True</span>
+<span class="n">ndl_mdl_spikes</span> <span class="o">=</span> <span class="p">[]</span> <span class="c1"># To store the spike outputs of the first Conv layer and the
+</span>                    <span class="c1"># penultimate dense layer whose probes we defined earlier.
+</span><span class="n">ndl_mdl_otpt_cls_probs</span> <span class="o">=</span> <span class="p">[]</span> <span class="c1"># To store the true class labels and the temporal
+</span>                            <span class="c1"># class-probabilities output of the model.
+</span>
+<span class="n">test_batches</span> <span class="o">=</span> <span class="n">get_nengo_compatible_test_data_generator</span><span class="p">(</span>
+    <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">n_steps</span> <span class="o">=</span> <span class="n">n_steps</span><span class="p">)</span>
+
+<span class="c1"># Run the simulation.
+</span><span class="k">with</span> <span class="n">nengo_dl</span><span class="p">.</span><span class="n">Simulator</span><span class="p">(</span><span class="n">ndl_model</span><span class="p">.</span><span class="n">net</span><span class="p">,</span> <span class="n">minibatch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">)</span> <span class="k">as</span> <span class="n">sim</span><span class="p">:</span>
+  <span class="c1"># Predict on each batch.
+</span>  <span class="k">for</span> <span class="n">batch</span> <span class="ow">in</span> <span class="n">test_batches</span><span class="p">:</span>
+    <span class="n">sim_data</span> <span class="o">=</span> <span class="n">sim</span><span class="p">.</span><span class="n">predict_on_batch</span><span class="p">({</span><span class="n">ndl_mdl_inpt</span><span class="p">:</span> <span class="n">batch</span><span class="p">[</span><span class="mi">0</span><span class="p">]})</span>
+    <span class="k">for</span> <span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">batch</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">sim_data</span><span class="p">[</span><span class="n">ndl_mdl_otpt</span><span class="p">]):</span>
+      <span class="c1"># Note that y_true is an array of shape (10,) and y_pred is a matrix of
+</span>      <span class="c1"># shape (n_steps, 10) where 10 is the number of classes in CIFAR-10 dataset.
+</span>      <span class="n">ndl_mdl_otpt_cls_probs</span><span class="p">.</span><span class="n">append</span><span class="p">((</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">))</span>
+
+    <span class="c1"># Collect the spikes if required.
+</span>    <span class="k">if</span> <span class="n">collect_spikes_output</span><span class="p">:</span>
+      <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">batch_size</span><span class="p">):</span> <span class="c1"># Collecting spikes for each image in first batch.
+</span>        <span class="n">ndl_mdl_spikes</span><span class="p">.</span><span class="n">append</span><span class="p">({</span>
+          <span class="n">first_conv_probe</span><span class="p">.</span><span class="n">obj</span><span class="p">.</span><span class="n">ensemble</span><span class="p">.</span><span class="n">label</span><span class="p">:</span> <span class="n">sim_data</span><span class="p">[</span><span class="n">first_conv_probe</span><span class="p">][</span><span class="n">i</span><span class="p">],</span>
+          <span class="n">penltmt_dense_probe</span><span class="p">.</span><span class="n">obj</span><span class="p">.</span><span class="n">ensemble</span><span class="p">.</span><span class="n">label</span><span class="p">:</span> <span class="n">sim_data</span><span class="p">[</span><span class="n">penltmt_dense_probe</span><span class="p">][</span><span class="n">i</span><span class="p">]</span>
+        <span class="p">})</span>
+      <span class="c1"># Not collecting the spikes for rest batches to save memory.
+</span>      <span class="n">collect_spikes_output</span> <span class="o">=</span> <span class="bp">False</span>
+</code></pre></div></div>
+<!--
+    Build finished in 0:00:00
+    Optimization finished in 0:00:00
+    Construction finished in 0:00:00
+    Constructing graph: build stage finished in 0:00:00                            
+-->
+
+<p>We are done with inference (using our spiking network) over the test data; let’s calculate our spiking network’s test accuracy. As mentioned above, the predicted classes <code class="language-plaintext highlighter-rouge">y_pred</code> for each test image is a matrix of temporally arranged class-probabilities, i.e. the spiking network outputs the class-probabilities of a test image at each timestep. In other words, the spiking model <code class="language-plaintext highlighter-rouge">"thinks"</code> what the test image could be… when it was allowed to see the image for a certain amount of time. After the end of the first timestep the predicted class-probabilities are obviously too immature to determine the correct label. Therefore, we generally consider the last timestep’s output to decide the predicted image label.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">acc</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">temporal_cls_probs</span> <span class="o">=</span> <span class="p">[]</span> <span class="c1"># To store the temporal class-probabilities of each test image.
+</span><span class="k">for</span> <span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span> <span class="ow">in</span> <span class="n">ndl_mdl_otpt_cls_probs</span><span class="p">:</span>
+  <span class="c1"># Pick the spiking network's last time-step output, therefore -1 in y_pred.
+</span>  <span class="n">temporal_cls_probs</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="n">y_pred</span><span class="p">)</span>
+  <span class="k">if</span> <span class="n">np</span><span class="p">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">y_true</span><span class="p">)</span> <span class="o">==</span> <span class="n">np</span><span class="p">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">y_pred</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]):</span>
+    <span class="n">acc</span> <span class="o">+=</span> <span class="mi">1</span>
+
+<span class="k">print</span><span class="p">(</span><span class="s">"Spiking network prediction accuracy: %s %%"</span> <span class="o">%</span> <span class="p">(</span><span class="n">acc</span> <span class="o">*</span> <span class="mi">100</span><span class="o">/</span> <span class="n">x_test</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+</code></pre></div></div>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Spiking network prediction accuracy: 61.71 %
+</code></pre></div></div>
+
+<p>We see that our spiking network’s test accuracy is close but not very close to the non-spiking TF model’s test accuracy. This is expected due to multiple reasons. Our spiking network is noisy and computation is discrete due to spikes. To reduce the effect of noise, one of the ways is to increase the synaptic time constant (try increasing the value of <code class="language-plaintext highlighter-rouge">synapse</code> to \(0.010\)). But keep in mind that consequently you would be required to simulate the network for a longer <code class="language-plaintext highlighter-rouge">n_steps</code> duration. You can also try increasing the <code class="language-plaintext highlighter-rouge">scale_firing_rates</code> parameter to \(50\) or so, or even simulate the above network as is for longer <code class="language-plaintext highlighter-rouge">n_steps</code>. With a particular combination of <code class="language-plaintext highlighter-rouge">n_steps</code>, <code class="language-plaintext highlighter-rouge">synapse</code>, and <code class="language-plaintext highlighter-rouge">scale_firing_rates</code> values we can achieve the non-spiking test accuracy, but is it worth it? The choice of these parameters depends upon your use case, thus it is a design problem. Increase in <code class="language-plaintext highlighter-rouge">n_steps</code> directly leads to increase in prediction latency, increase in <code class="language-plaintext highlighter-rouge">scale_firing_rates</code> directly leads to increase in power consumption (thus violating the purpose of using neuromorphic chips). Another way to achieve better test accuracy is to train ReLU neurons with noise added, but one has to be careful so as not to degrade the network semantics.</p>
+
+<h2 id="how-to-visualize-the-spikes">How to visualize the spikes?</h2>
+
+<p>We talked a lot about spikes. Now it’s time to visualize them. Note that according to the <a href="https://github.com/nengo/nengo/blob/master/nengo/neurons.py#L410">implementation</a> of <code class="language-plaintext highlighter-rouge">nengo.SpikingRectifiedLinear()</code> neuron, it can output more than \(1\) spike in a single timestep. We however, are interested to just seeing the spikes; therefore, we will not consider the actual spike amplitudes, rather just the timesteps when they occur. Let’s plot the spikes collected from the first convolutional layer and the penultimate dense layer obtained from the simulation above. Note that I am not plotting the spiking neurons’ actual output values, you can do that by filtering the spikes.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">plot_spikes</span><span class="p">(</span><span class="n">probe</span><span class="p">,</span> <span class="n">test_data_idx</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">num_neurons</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span> <span class="n">dt</span><span class="o">=</span><span class="mf">0.001</span><span class="p">):</span>
+  <span class="s">"""
+  Plots the spikes of the layer corresponding to the `probe`.
+
+  Args:
+    probe &lt;nengo.probe.Probe&gt;: The probe object of the layer whose spikes are to
+                               be plotted.
+    test_data_idx &lt;int&gt;: Test image's index for which spikes were generated.
+    num_neurons &lt;int&gt;: Number of random neurons for which spikes are to be plotted.
+    dt &lt;int&gt;: The duration of each timestep. Nengo-DL's default duration is 0.001s.
+  """</span>
+  <span class="n">lyr_name</span> <span class="o">=</span> <span class="n">probe</span><span class="p">.</span><span class="n">obj</span><span class="p">.</span><span class="n">ensemble</span><span class="p">.</span><span class="n">label</span>
+  <span class="n">spikes_matrix</span> <span class="o">=</span> <span class="n">ndl_mdl_spikes</span><span class="p">[</span><span class="n">test_data_idx</span><span class="p">][</span><span class="n">lyr_name</span><span class="p">]</span> <span class="o">*</span> <span class="n">sfr</span> <span class="o">*</span> <span class="n">dt</span>
+  <span class="n">neurons</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">random</span><span class="p">.</span><span class="n">choice</span><span class="p">(</span><span class="n">spikes_matrix</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">num_neurons</span><span class="p">,</span> <span class="n">replace</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+  <span class="n">spikes_matrix</span> <span class="o">=</span> <span class="n">spikes_matrix</span><span class="p">[:,</span> <span class="n">neurons</span><span class="p">]</span>
+
+  <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="p">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">14</span><span class="p">,</span> <span class="mi">12</span><span class="p">),</span> <span class="n">facecolor</span><span class="o">=</span><span class="s">"#00FFFF"</span><span class="p">)</span>
+  <span class="n">color</span> <span class="o">=</span> <span class="n">matplotlib</span><span class="p">.</span><span class="n">cm</span><span class="p">.</span><span class="n">get_cmap</span><span class="p">(</span><span class="s">'tab10'</span><span class="p">)(</span><span class="mi">0</span><span class="p">)</span>
+  <span class="n">timesteps</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">arange</span><span class="p">(</span><span class="n">n_steps</span><span class="p">)</span>
+  <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_neurons</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">timesteps</span><span class="p">[</span><span class="n">np</span><span class="p">.</span><span class="n">where</span><span class="p">(</span><span class="n">spikes_matrix</span><span class="p">[:,</span> <span class="n">i</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)]:</span>
+      <span class="n">ax</span><span class="p">.</span><span class="n">plot</span><span class="p">([</span><span class="n">t</span><span class="p">,</span> <span class="n">t</span><span class="p">],</span> <span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">i</span><span class="o">+</span><span class="mf">1.5</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">)</span>
+
+  <span class="n">ax</span><span class="p">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">num_neurons</span><span class="o">+</span><span class="mf">0.5</span><span class="p">)</span>
+  <span class="n">ax</span><span class="p">.</span><span class="n">set_yticks</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">num_neurons</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">num_neurons</span><span class="o">/</span><span class="mi">50</span><span class="p">)))))</span>
+  <span class="n">ax</span><span class="p">.</span><span class="n">set_xticks</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_steps</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">)))</span>
+  <span class="n">ax</span><span class="p">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s">"Neuron Index"</span><span class="p">)</span>
+  <span class="n">ax</span><span class="p">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s">"Time in $ms$"</span><span class="p">)</span>
+  <span class="n">ax</span><span class="p">.</span><span class="n">set_title</span><span class="p">(</span><span class="s">"Layer: %s"</span> <span class="o">%</span> <span class="n">lyr_name</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Spike plot for the first Convolutional layer is below.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">plot_spikes</span><span class="p">(</span><span class="n">first_conv_probe</span><span class="p">)</span>
+</code></pre></div></div>
+
+<center><img src="output_25_0.png" alt="output_25_0.png" width="900" /></center>
+
+<p>Spike plot for the penultimate dense layer is below.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">plot_spikes</span><span class="p">(</span><span class="n">penltmt_dense_probe</span><span class="p">)</span>
+</code></pre></div></div>
+
+<center><img src="output_27_0.png" alt="output_27_0.png" width="900" /></center>
+
+<p>As can be seen in the above two plots for Layer <code class="language-plaintext highlighter-rouge">conv2d.0</code> and <code class="language-plaintext highlighter-rouge">dense.0</code>, we see dots (which are actually small lines) which represent the spiking activity of \(512\) random neurons in the corresponding layers. The spiking activity is quite dense in the first Convolutional layer i.e. in <code class="language-plaintext highlighter-rouge">conv2d.0</code>. We see that most neurons in this layer spike every timestep. <em>Is this good? or bad?</em> It depends upon the design constraints. Ideally the spiking activity should be sparse for low power consumption.</p>
+
+<p>Although in the penultimate dense layer’s spike plot i.e. in <code class="language-plaintext highlighter-rouge">dense.0</code>, we see the spiking activity is quite sparse. Good enough…, this layer consumes lesser power than layer <code class="language-plaintext highlighter-rouge">conv2d.0</code>. In spiking networks, you will generally find sparser spiking activity as you progress down the depth of the network. Most neurons don’t spike at deeper levels because they don’t get enough input from the previous layers; thus the spikes gradually die down as you go deeper (Note: If you add <code class="language-plaintext highlighter-rouge">BatchNormalization</code> layers, then you will note that the spiking activity is less sparse in deeper layers, however during conversion, the last mean/scaling terms used by <code class="language-plaintext highlighter-rouge">BatchNormalization</code> layers will be hard coded).</p>
+
+<h3 id="visualizing-the-output-layer-class-probabilities">Visualizing the output layer class probabilities</h3>
+
+<p>As a means to close this article, let’s also plot how the class-probabilities vary with each timestep. I am plotting it for the test image at the indices \(0\) and \(19\) randomly. You can plot it for other test images too and observe the prediction behaviour with respect to timesteps.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">plot_probability</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">true_cls</span><span class="p">,</span> <span class="n">pred_cls</span><span class="p">,</span> <span class="n">clss_probs</span><span class="p">,</span> <span class="n">num_clss</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
+  <span class="s">"""
+  Plots the temporal variability in predicted class-probabilities.
+
+  Args:
+    ax &lt;matplotlib.axes._subplots.AxesSubplot&gt;: Subplot pane.
+    true_cls &lt;int&gt;: The true class of the test image.
+    pred_cls &lt;int&gt;: The predicted class of the test image from spiking network.
+    clss_probs &lt;numpy.ndarray&gt;: The predicted class probabilities at each
+                                timestep. Shape: (n_steps, num_clss).
+  """</span>
+  <span class="n">ax</span><span class="p">.</span><span class="n">set_title</span><span class="p">(</span><span class="s">"True Class: %s, Pred Class: %s"</span> <span class="o">%</span> <span class="p">(</span><span class="n">true_cls</span><span class="p">,</span> <span class="n">pred_cls</span><span class="p">))</span>
+  <span class="n">ax</span><span class="p">.</span><span class="n">plot</span><span class="p">(</span><span class="n">clss_probs</span><span class="p">)</span>
+  <span class="n">ax</span><span class="p">.</span><span class="n">legend</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">j</span><span class="p">)</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_clss</span><span class="p">)],</span> <span class="n">loc</span><span class="o">=</span><span class="s">"upper left"</span><span class="p">)</span>
+  <span class="n">ax</span><span class="p">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s">"Time in $ms$"</span><span class="p">)</span>
+  <span class="n">ax</span><span class="p">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s">"Probability"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">fig</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="p">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">16</span><span class="p">,</span> <span class="mi">8</span><span class="p">),</span> <span class="n">facecolor</span><span class="o">=</span><span class="s">"#00FFFF"</span><span class="p">)</span>
+
+<span class="c1"># Plot for the test image at index 0.
+</span><span class="n">plot_probability</span><span class="p">(</span>
+    <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+    <span class="n">np</span><span class="p">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">y_test</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+    <span class="n">np</span><span class="p">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">temporal_cls_probs</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]),</span> <span class="c1"># Last timestep's probability scores.
+</span>    <span class="n">temporal_cls_probs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="p">)</span>
+
+<span class="c1"># Plot for the test image at index 19.
+</span><span class="n">plot_probability</span><span class="p">(</span>
+    <span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+    <span class="n">np</span><span class="p">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">y_test</span><span class="p">[</span><span class="mi">19</span><span class="p">]),</span>
+    <span class="n">np</span><span class="p">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">temporal_cls_probs</span><span class="p">[</span><span class="mi">19</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]),</span> <span class="c1"># Last timestep's probability scores.
+</span>    <span class="n">temporal_cls_probs</span><span class="p">[</span><span class="mi">19</span><span class="p">]</span>
+<span class="p">)</span>
+</code></pre></div></div>
+
+<center><img src="output_30_0.png" alt="output_30_0.png" width="900" /></center>
+
+<p>As can be seen in the above plots, the predicted class-probabilities vary at each timestep and tend to finalize at the last timestep. In the earlier timesteps (\(5ms\) to \(25ms\)) however, the predicted output is fuzzy and doesn’t even budge before \(5ms\) or \(7ms\) of time. With the chosen <code class="language-plaintext highlighter-rouge">synapse = 0.005</code> and <code class="language-plaintext highlighter-rouge">scale_firing_rates = 20</code>, this naive spiking network recognizes \(61.71%\) percent of CIFAR-10 images correctly in <code class="language-plaintext highlighter-rouge">n_steps = 30</code>\(ms\) of time. Not bad!</p>
+
+<p>Try playing with these above parameters to see their effects on the spike and class-probability plots. That’s it! Hope you found it useful :)</p>
+
+<hr />
+:ET
