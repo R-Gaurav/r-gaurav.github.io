@@ -112,9 +112,26 @@ on the terminal:
 ```
 http://localhost:8888/lab?token=9b75d001b317496a30cf28c0d768775ff954f2fa059a6491
 ```
-Take note of the `port` here which is $$8888$$ and the `token` ID. We need to do
-a clever little hack to access the `jupyterlab` session running on the compute
-node we just logged in (i.e. `tc307` in my case).
+Take note of the `port` here which is $$8888$$ and the `token` ID. To access this
+`jupyterlab` session running on the compute node we just logged in (`tc307` in my
+case), on our local system, we need to do a clever little hack. We will use `ssh`
+tunneling to access the session via our login node (i.e. `tinkercliffs2`). Execute
+the following on your local machine:
+```
+ssh -L 127.0.0.1:8080:127.0.0.1:8888 <your_user_id>@tinkercliffs2.arc.vt.edu -t ssh -L 8888:localhost:8888 <your_user_id>@tc307
+```
+There are four `port` numbers that you mention in the above command (first to last):
+$$8080$$, $8888$$, $$8888$$, $$8888$$. The fourth `port` i.e. $$8888$$ is taken from
+the URL you got on the compute node i.e. `tc307` in my case, and the third `port`
+number is where you want to redirect the session on the login node. Note that the
+third and second `port` numbers should be the same. The first `port` number is where
+you want to access the session on your local machine.
 
+Next, fire up your local browser and enter the URL: `127.0.0.1:8080`. You will see
+a `jupyterlab` session coming up which requires a token ID to be authenticated.
+Enter the `token` ID you got on your compute node, i.e. on `tc307` in my case and
+you will be able to access the interactive `jupyterlab` session locally! That's it!
+
+## Bonus
 
 ---
