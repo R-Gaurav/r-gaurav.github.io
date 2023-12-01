@@ -1,4 +1,4 @@
-I"ȧ<p>This blog article talks about the intuition behind activation functions which form an integral part in the design of Neural Net (NN for short) architectures.</p>
+I"ڬ<p>This blog article talks about the intuition behind activation functions which form an integral part in the design of Neural Net (NN for short) architectures.</p>
 
 <p>By the end of this article you will learn:</p>
 <ul>
@@ -105,40 +105,40 @@ Familiarity with neuroscience topics is not a prerequisite here. I have tried to
 <p>Let us first begin by implementing the Euler’s method to get the neuron’s membrane potential at every time point. Note that for all the spiking neuron’s simulations below, the <code class="language-plaintext highlighter-rouge">stimulus</code> input current \(J\) is fed continuously throughout the simulation duration.</p>
 
 <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">get_new_membrane_potential</span><span class="p">(</span><span class="n">J</span><span class="p">,</span> <span class="n">v_prev</span><span class="p">,</span> <span class="n">tau_RC</span><span class="p">,</span> <span class="n">dt</span><span class="p">):</span>
-  <span class="s">"""
+  <span class="sh">"""</span><span class="s">
   Implements Euler method to solve the differential equation to obtain membrane
   potential.
 
   Args:
     J (float): The input current.
     v_prev (float): The previous membrane potential.
-    tau_RC (float): The membrane's time constant.
+    tau_RC (float): The membrane</span><span class="sh">'</span><span class="s">s time constant.
     dt (float): The discrete timestep of the simulation.
 
   Returns:
     float: The new membrane potential.
-  """</span>
-  <span class="n">slope</span> <span class="o">=</span> <span class="nb">float</span><span class="p">((</span><span class="n">J</span> <span class="o">-</span> <span class="n">v_prev</span><span class="p">))</span><span class="o">/</span><span class="n">tau_RC</span>
+  </span><span class="sh">"""</span>
+  <span class="n">slope</span> <span class="o">=</span> <span class="nf">float</span><span class="p">((</span><span class="n">J</span> <span class="o">-</span> <span class="n">v_prev</span><span class="p">))</span><span class="o">/</span><span class="n">tau_RC</span>
   <span class="k">return</span> <span class="n">v_prev</span> <span class="o">+</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">slope</span>
 </code></pre></div></div>
 
 <p>Next, let us implement the LIF neuron model. Note that during the refractory period, the neuron’s membrane potential is set to the resting potential <code class="language-plaintext highlighter-rouge">v_rest</code> i.e. \(0\) to indicate no increase in potential; thus, no spiking during the refractory period. Also, if the neuron’s membrane potential ever goes below \(0\), it is reset to resting potential.</p>
 
 <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">simulate_spiking_neuron</span><span class="p">(</span><span class="n">J</span><span class="p">,</span> <span class="n">tau_RC</span><span class="o">=</span><span class="mf">20e-3</span><span class="p">,</span> <span class="n">tau_ref</span><span class="o">=</span><span class="mf">2e-3</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">dt</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">):</span>
-  <span class="s">"""
+  <span class="sh">"""</span><span class="s">
   Simulates a spiking neuron.
 
   Args:
     J (float): The input current.
-    tau_RC (float): The membrane's time constant.
-    tar_ref (float): The neuron's refractory period (no spike in this duration).
+    tau_RC (float): The membrane</span><span class="sh">'</span><span class="s">s time constant.
+    tar_ref (float): The neuron</span><span class="sh">'</span><span class="s">s refractory period (no spike in this duration).
     T (float): The total time of the simulation.
     dt (float): The discrete timestep of the simulation.
 
   Returns:
     int, [float], [float]: Number of spikes, Time points at which there was a
                            spike, Membrane potential at all time points.
-  """</span>
+  </span><span class="sh">"""</span>
   <span class="c1"># Assumptions.
 </span>  <span class="n">v_rest</span><span class="p">,</span> <span class="n">v_th</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span>
 
@@ -149,34 +149,34 @@ Familiarity with neuroscience topics is not a prerequisite here. I have tried to
 </span>  <span class="c1"># it is assumed that the membrane's previous potential is at `v_rest`.
 </span>  <span class="n">v_prev</span> <span class="o">=</span> <span class="n">v_rest</span>
 
-  <span class="k">while</span><span class="p">(</span><span class="n">time_point</span> <span class="o">&lt;</span> <span class="n">T</span><span class="p">):</span>
-    <span class="n">v_curr</span> <span class="o">=</span> <span class="n">get_new_membrane_potential</span><span class="p">(</span><span class="n">J</span><span class="p">,</span> <span class="n">v_prev</span><span class="p">,</span> <span class="n">tau_RC</span><span class="p">,</span> <span class="n">dt</span><span class="p">)</span>
+  <span class="nf">while</span><span class="p">(</span><span class="n">time_point</span> <span class="o">&lt;</span> <span class="n">T</span><span class="p">):</span>
+    <span class="n">v_curr</span> <span class="o">=</span> <span class="nf">get_new_membrane_potential</span><span class="p">(</span><span class="n">J</span><span class="p">,</span> <span class="n">v_prev</span><span class="p">,</span> <span class="n">tau_RC</span><span class="p">,</span> <span class="n">dt</span><span class="p">)</span>
 
     <span class="c1"># If `v_curr` &gt;= `v_th` at the current time point, the neuron spikes.
 </span>    <span class="k">if</span> <span class="n">v_curr</span> <span class="o">&gt;=</span> <span class="n">v_th</span><span class="p">:</span>
       <span class="n">num_spikes</span> <span class="o">+=</span> <span class="mi">1</span>
-      <span class="n">spike_times</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="n">time_point</span><span class="p">)</span>
-      <span class="n">v</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="n">v_curr</span><span class="p">)</span>
+      <span class="n">spike_times</span><span class="p">.</span><span class="nf">append</span><span class="p">(</span><span class="n">time_point</span><span class="p">)</span>
+      <span class="n">v</span><span class="p">.</span><span class="nf">append</span><span class="p">(</span><span class="n">v_curr</span><span class="p">)</span>
 
       <span class="c1"># Set the neuron's state in refractory period, starting at the time when
 </span>      <span class="c1"># the spike ocurred.
-</span>      <span class="k">while</span><span class="p">(</span><span class="n">time_point</span> <span class="o">&lt;</span> <span class="n">spike_times</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">tau_ref</span><span class="p">):</span>
+</span>      <span class="nf">while</span><span class="p">(</span><span class="n">time_point</span> <span class="o">&lt;</span> <span class="n">spike_times</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">tau_ref</span><span class="p">):</span>
         <span class="c1"># Rounding to 3 floating places is necessary to avoid precision issues.
-</span>        <span class="n">time_point</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">time_point</span> <span class="o">+</span> <span class="n">dt</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+</span>        <span class="n">time_point</span> <span class="o">=</span> <span class="nf">round</span><span class="p">(</span><span class="n">time_point</span> <span class="o">+</span> <span class="n">dt</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">time_point</span> <span class="o">&gt;=</span> <span class="n">T</span><span class="p">:</span>
           <span class="k">break</span>
         <span class="n">v_curr</span> <span class="o">=</span> <span class="n">v_rest</span> <span class="c1"># Reset the current membrane potential to `v_rest`.
-</span>        <span class="n">v</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="n">v_curr</span><span class="p">)</span>
+</span>        <span class="n">v</span><span class="p">.</span><span class="nf">append</span><span class="p">(</span><span class="n">v_curr</span><span class="p">)</span>
 
     <span class="c1"># If `v_curr` goes below `v_rest` at the current time, reset it to `v_rest`.
 </span>    <span class="k">elif</span> <span class="n">v_curr</span> <span class="o">&lt;</span> <span class="n">v_rest</span><span class="p">:</span>
       <span class="n">v_curr</span> <span class="o">=</span> <span class="n">v_rest</span>
-      <span class="n">v</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="n">v_curr</span><span class="p">)</span>
+      <span class="n">v</span><span class="p">.</span><span class="nf">append</span><span class="p">(</span><span class="n">v_curr</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
-      <span class="n">v</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="n">v_curr</span><span class="p">)</span>
+      <span class="n">v</span><span class="p">.</span><span class="nf">append</span><span class="p">(</span><span class="n">v_curr</span><span class="p">)</span>
 
     <span class="n">v_prev</span> <span class="o">=</span> <span class="n">v_curr</span> <span class="c1"># Update the previous membrane potential.
-</span>    <span class="n">time_point</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">time_point</span> <span class="o">+</span> <span class="n">dt</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span> <span class="c1"># Update the current time.
+</span>    <span class="n">time_point</span> <span class="o">=</span> <span class="nf">round</span><span class="p">(</span><span class="n">time_point</span> <span class="o">+</span> <span class="n">dt</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span> <span class="c1"># Update the current time.
 </span>    <span class="k">if</span> <span class="n">time_point</span> <span class="o">&gt;=</span> <span class="n">T</span><span class="p">:</span>
       <span class="k">break</span>
 
@@ -190,7 +190,7 @@ Familiarity with neuroscience topics is not a prerequisite here. I have tried to
 <p>where \(t_k\) is the time at which the \(k^{th}\) spike of \(i^{th}\) neuron occurs. \(S_i()\) is simply the spike translation function (from spiking time to spike) of \(i^{th}\) neuron. If you remember, the Dirac \(\delta\) function is zero everywhere except at 0 and its integral over the entire domain is one. Here we model the Dirac \(\delta\) function as simply \(\frac{1}{dt}\) where \(dt\) is the small timestep (here set to \(0.001s\)).</p>
 
 <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">get_spike_lines</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="n">spike_times</span><span class="p">,</span> <span class="n">dt</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">):</span>
-  <span class="s">"""
+  <span class="sh">"""</span><span class="s">
   Helper function to create spikes.
 
   Args:
@@ -200,66 +200,66 @@ Familiarity with neuroscience topics is not a prerequisite here. I have tried to
 
   Returns:
     [int]: The spike equivalents (delta function).
-  """</span>
+  </span><span class="sh">"""</span>
   <span class="n">spikes</span> <span class="o">=</span> <span class="p">[]</span>
   <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
   <span class="k">for</span> <span class="n">time</span> <span class="ow">in</span> <span class="n">times</span><span class="p">:</span>
-    <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">spike_times</span><span class="p">)</span> <span class="ow">and</span> <span class="n">np</span><span class="p">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="n">spike_times</span><span class="p">[</span><span class="n">i</span><span class="p">]):</span>
-      <span class="n">spikes</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="nb">round</span><span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="n">dt</span><span class="p">)))</span> <span class="c1"># Delta function approximation.
+    <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="nf">len</span><span class="p">(</span><span class="n">spike_times</span><span class="p">)</span> <span class="ow">and</span> <span class="n">np</span><span class="p">.</span><span class="nf">allclose</span><span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="n">spike_times</span><span class="p">[</span><span class="n">i</span><span class="p">]):</span>
+      <span class="n">spikes</span><span class="p">.</span><span class="nf">append</span><span class="p">(</span><span class="nf">int</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="nf">round</span><span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="n">dt</span><span class="p">)))</span> <span class="c1"># Delta function approximation.
 </span>      <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
     <span class="k">else</span><span class="p">:</span>
-      <span class="n">spikes</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="nb">round</span><span class="p">(</span><span class="mi">0</span><span class="o">/</span><span class="n">dt</span><span class="p">)))</span> <span class="c1"># Delta function approximation.
+      <span class="n">spikes</span><span class="p">.</span><span class="nf">append</span><span class="p">(</span><span class="nf">int</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="nf">round</span><span class="p">(</span><span class="mi">0</span><span class="o">/</span><span class="n">dt</span><span class="p">)))</span> <span class="c1"># Delta function approximation.
 </span>
   <span class="k">return</span> <span class="n">spikes</span>
 
 
 <span class="k">def</span> <span class="nf">plot_spikes</span><span class="p">(</span><span class="n">J</span><span class="p">,</span> <span class="n">spike_times</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">dt</span><span class="p">):</span>
-    <span class="n">times</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">dt</span><span class="p">)</span>
-    <span class="n">spikes</span> <span class="o">=</span> <span class="n">get_spike_lines</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="n">spike_times</span><span class="p">,</span> <span class="n">dt</span><span class="p">)</span>
-    <span class="k">assert</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="nb">round</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="nb">sum</span><span class="p">(</span><span class="n">spikes</span><span class="p">)</span><span class="o">*</span><span class="n">dt</span><span class="p">))</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">spike_times</span><span class="p">)</span>
-    <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="p">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span> <span class="n">facecolor</span><span class="o">=</span><span class="s">"#00FFFF"</span><span class="p">)</span>
-    <span class="n">fig</span><span class="p">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s">"Spike Train for constant input current J = %s, # Spikes: %s"</span>
-                 <span class="o">%</span> <span class="p">(</span><span class="n">J</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">spike_times</span><span class="p">)))</span>
-    <span class="n">ax</span><span class="p">.</span><span class="n">plot</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="n">spikes</span><span class="p">)</span>
-    <span class="n">ax</span><span class="p">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s">"Time $t$ in seconds"</span><span class="p">)</span>
-    <span class="n">ax</span><span class="p">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s">"Spike"</span><span class="p">)</span>
+    <span class="n">times</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">dt</span><span class="p">)</span>
+    <span class="n">spikes</span> <span class="o">=</span> <span class="nf">get_spike_lines</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="n">spike_times</span><span class="p">,</span> <span class="n">dt</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nf">int</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="nf">round</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="nf">sum</span><span class="p">(</span><span class="n">spikes</span><span class="p">)</span><span class="o">*</span><span class="n">dt</span><span class="p">))</span> <span class="o">==</span> <span class="nf">len</span><span class="p">(</span><span class="n">spike_times</span><span class="p">)</span>
+    <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="p">.</span><span class="nf">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span> <span class="n">facecolor</span><span class="o">=</span><span class="sh">"</span><span class="s">#00FFFF</span><span class="sh">"</span><span class="p">)</span>
+    <span class="n">fig</span><span class="p">.</span><span class="nf">suptitle</span><span class="p">(</span><span class="sh">"</span><span class="s">Spike Train for constant input current J = %s, # Spikes: %s</span><span class="sh">"</span>
+                 <span class="o">%</span> <span class="p">(</span><span class="n">J</span><span class="p">,</span> <span class="nf">len</span><span class="p">(</span><span class="n">spike_times</span><span class="p">)))</span>
+    <span class="n">ax</span><span class="p">.</span><span class="nf">plot</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="n">spikes</span><span class="p">)</span>
+    <span class="n">ax</span><span class="p">.</span><span class="nf">set_xlabel</span><span class="p">(</span><span class="sh">"</span><span class="s">Time $t$ in seconds</span><span class="sh">"</span><span class="p">)</span>
+    <span class="n">ax</span><span class="p">.</span><span class="nf">set_ylabel</span><span class="p">(</span><span class="sh">"</span><span class="s">Spike</span><span class="sh">"</span><span class="p">)</span>
 </code></pre></div></div>
 
 <p>What about plotting neuron’s membrane potential \(V(t)\)? Let us plot it too for a better understanding.</p>
 
 <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">plot_potential</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">J</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">dt</span><span class="p">):</span>
-  <span class="n">times</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">dt</span><span class="p">)</span>
-  <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="p">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span> <span class="n">facecolor</span><span class="o">=</span><span class="s">"#00FFFF"</span><span class="p">)</span>
-  <span class="n">ax</span><span class="p">.</span><span class="n">plot</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
-  <span class="n">fig</span><span class="p">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s">"Membrane potential over the simuation duration T = %s, J: %s"</span>
+  <span class="n">times</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">dt</span><span class="p">)</span>
+  <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="p">.</span><span class="nf">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span> <span class="n">facecolor</span><span class="o">=</span><span class="sh">"</span><span class="s">#00FFFF</span><span class="sh">"</span><span class="p">)</span>
+  <span class="n">ax</span><span class="p">.</span><span class="nf">plot</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+  <span class="n">fig</span><span class="p">.</span><span class="nf">suptitle</span><span class="p">(</span><span class="sh">"</span><span class="s">Membrane potential over the simuation duration T = %s, J: %s</span><span class="sh">"</span>
                <span class="o">%</span> <span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">J</span><span class="p">))</span>
-  <span class="n">ax</span><span class="p">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s">"Time $t$ in seconds"</span><span class="p">)</span>
-  <span class="n">ax</span><span class="p">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s">"Membrane potential"</span><span class="p">)</span>
+  <span class="n">ax</span><span class="p">.</span><span class="nf">set_xlabel</span><span class="p">(</span><span class="sh">"</span><span class="s">Time $t$ in seconds</span><span class="sh">"</span><span class="p">)</span>
+  <span class="n">ax</span><span class="p">.</span><span class="nf">set_ylabel</span><span class="p">(</span><span class="sh">"</span><span class="s">Membrane potential</span><span class="sh">"</span><span class="p">)</span>
 </code></pre></div></div>
 
 <h1 id="experiments">Experiments</h1>
 <p>We have implemented all the necessary pieces of code. Let us next import the necessary libraries for simulation and call the above-defined functions.</p>
 
-<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="n">np</span>
-<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="n">numpy</span> <span class="k">as</span> <span class="n">np</span>
+<span class="kn">import</span> <span class="n">matplotlib.pyplot</span> <span class="k">as</span> <span class="n">plt</span>
 
 <span class="k">def</span> <span class="nf">simulate_exp</span><span class="p">(</span><span class="n">J</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">dt</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">):</span>
-  <span class="s">"""
+  <span class="sh">"""</span><span class="s">
   Simulates experiment.
 
   Args:
     J (float): Input current.
     T (float): Simulation time period in seconds.
     dt (float): Simulation timestep in seconds.
-  """</span>
-  <span class="n">num_spikes</span><span class="p">,</span> <span class="n">spike_times</span><span class="p">,</span> <span class="n">v</span> <span class="o">=</span> <span class="n">simulate_spiking_neuron</span><span class="p">(</span><span class="n">J</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="n">T</span><span class="p">,</span> <span class="n">dt</span><span class="o">=</span><span class="n">dt</span><span class="p">)</span>
-  <span class="n">plot_spikes</span><span class="p">(</span><span class="n">J</span><span class="p">,</span> <span class="n">spike_times</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">dt</span><span class="p">)</span>
-  <span class="n">plot_potential</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">J</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">dt</span><span class="p">)</span>
+  </span><span class="sh">"""</span>
+  <span class="n">num_spikes</span><span class="p">,</span> <span class="n">spike_times</span><span class="p">,</span> <span class="n">v</span> <span class="o">=</span> <span class="nf">simulate_spiking_neuron</span><span class="p">(</span><span class="n">J</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="n">T</span><span class="p">,</span> <span class="n">dt</span><span class="o">=</span><span class="n">dt</span><span class="p">)</span>
+  <span class="nf">plot_spikes</span><span class="p">(</span><span class="n">J</span><span class="p">,</span> <span class="n">spike_times</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">dt</span><span class="p">)</span>
+  <span class="nf">plot_potential</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">J</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">dt</span><span class="p">)</span>
 </code></pre></div></div>
 
 <p>Let us feed an input current of \(0\) and observe the behaviour.</p>
 
-<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">simulate_exp</span><span class="p">(</span><span class="n">J</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">simulate_exp</span><span class="p">(</span><span class="n">J</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 </code></pre></div></div>
 
 <center><img src="output_12_0.png" alt="output_12_0" width="600" /></center>
@@ -268,7 +268,7 @@ Familiarity with neuroscience topics is not a prerequisite here. I have tried to
 
 <p>As expected, there are no spikes and no change in the neuron’s membrane potential (it continues to stay at \(V_{rest} = 0\)). What about feeding an input current of \(1\)?</p>
 
-<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">simulate_exp</span><span class="p">(</span><span class="n">J</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">simulate_exp</span><span class="p">(</span><span class="n">J</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 </code></pre></div></div>
 
 <center><img src="output_14_0.png" alt="output_14_0" width="600" /></center>
@@ -277,7 +277,7 @@ Familiarity with neuroscience topics is not a prerequisite here. I have tried to
 
 <p>Again, no spikes but there was a change in the membrane potential. Visually, it seems that it has reached the threshold \(V_{th} = 1\), but numerically it hasn’t. Let us feed an input current of \(1.1\) and observe.</p>
 
-<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">simulate_exp</span><span class="p">(</span><span class="n">J</span><span class="o">=</span><span class="mf">1.1</span><span class="p">)</span>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">simulate_exp</span><span class="p">(</span><span class="n">J</span><span class="o">=</span><span class="mf">1.1</span><span class="p">)</span>
 </code></pre></div></div>
 
 <center><img src="output_16_0.png" alt="output_16_0" width="600" /></center>
@@ -288,8 +288,8 @@ Familiarity with neuroscience topics is not a prerequisite here. I have tried to
 
 <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">T</span><span class="p">,</span> <span class="n">dt</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.001</span>
 <span class="n">J</span> <span class="o">=</span> <span class="mf">1.1</span>
-<span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">v</span> <span class="o">=</span> <span class="n">simulate_spiking_neuron</span><span class="p">(</span><span class="n">J</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="n">T</span><span class="p">)</span>
-<span class="n">plot_potential</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">J</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">dt</span><span class="p">)</span>
+<span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">v</span> <span class="o">=</span> <span class="nf">simulate_spiking_neuron</span><span class="p">(</span><span class="n">J</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="n">T</span><span class="p">)</span>
+<span class="nf">plot_potential</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">J</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">dt</span><span class="p">)</span>
 </code></pre></div></div>
 
 <center><img src="output_18_0.png" alt="output_18_0" width="600" /></center>
@@ -302,43 +302,43 @@ Familiarity with neuroscience topics is not a prerequisite here. I have tried to
 <p>All the above work can now be culminated to get the intuition behind the activation function, the very purpose of this article. As you know, the activation function outputs a value after accepting an input. This input and output is actually an abstract representation of <code class="language-plaintext highlighter-rouge">stimulus</code> and <code class="language-plaintext highlighter-rouge">firing rate</code> respectively. Further simulations will show how. I will feed an input current to the function <code class="language-plaintext highlighter-rouge">simulate_spiking_neuron()</code> for a period of \(1s\) and record the output firing rate. This will be done for each integral input current in the range [\(0\), \(10\)]. Let us write the necessary code for it.</p>
 
 <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">firing_rates</span> <span class="o">=</span> <span class="p">[]</span>
-<span class="n">input_crnts</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">11</span><span class="p">))</span>
+<span class="n">input_crnts</span> <span class="o">=</span> <span class="nf">list</span><span class="p">(</span><span class="nf">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">11</span><span class="p">))</span>
 
 <span class="k">for</span> <span class="n">crnt</span> <span class="ow">in</span> <span class="n">input_crnts</span><span class="p">:</span>
-  <span class="n">num_spikes</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">simulate_spiking_neuron</span><span class="p">(</span><span class="n">crnt</span><span class="p">)</span>
-  <span class="n">firing_rates</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="n">num_spikes</span><span class="p">)</span>
+  <span class="n">num_spikes</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="nf">simulate_spiking_neuron</span><span class="p">(</span><span class="n">crnt</span><span class="p">)</span>
+  <span class="n">firing_rates</span><span class="p">.</span><span class="nf">append</span><span class="p">(</span><span class="n">num_spikes</span><span class="p">)</span>
 </code></pre></div></div>
 
 <p>Now that we have obtained the firing rates for different input currents, let us plot the firing rate vs the input current graph. Also, let us plot the common activation functions - namely <code class="language-plaintext highlighter-rouge">Sigmoid</code> and <code class="language-plaintext highlighter-rouge">ReLU</code> with the same inputs i.e. the input currents.</p>
 
 <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">sigmoid</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
-   <span class="k">return</span> <span class="mi">1</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">np</span><span class="p">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">x</span><span class="p">))</span>
+   <span class="k">return</span> <span class="mi">1</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">np</span><span class="p">.</span><span class="nf">exp</span><span class="p">(</span><span class="o">-</span><span class="n">x</span><span class="p">))</span>
 
 <span class="k">def</span> <span class="nf">relu</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
-  <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+  <span class="k">return</span> <span class="nf">max</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
 
 <span class="k">def</span> <span class="nf">plot_firing_rates_and_act_fns</span><span class="p">(</span><span class="n">firing_rates</span><span class="p">,</span> <span class="n">input_crnts</span><span class="p">):</span>
-  <span class="n">fig</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="p">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">16</span><span class="p">,</span> <span class="mi">6</span><span class="p">),</span> <span class="n">facecolor</span><span class="o">=</span><span class="s">"#00FFFF"</span><span class="p">)</span>
-  <span class="n">fig</span><span class="p">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s">"Intuition behind Activation Functions"</span><span class="p">)</span>
-  <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">plot</span><span class="p">(</span><span class="n">input_crnts</span><span class="p">,</span> <span class="n">firing_rates</span><span class="p">)</span>
-  <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s">"Input Current"</span><span class="p">)</span>
-  <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s">"Firing Rate in $Hz$"</span><span class="p">)</span>
-  <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">set_title</span><span class="p">(</span><span class="s">"Firing Rate vs Input Current"</span><span class="p">)</span>
-  <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">plot</span><span class="p">()</span>
+  <span class="n">fig</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="p">.</span><span class="nf">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">16</span><span class="p">,</span> <span class="mi">6</span><span class="p">),</span> <span class="n">facecolor</span><span class="o">=</span><span class="sh">"</span><span class="s">#00FFFF</span><span class="sh">"</span><span class="p">)</span>
+  <span class="n">fig</span><span class="p">.</span><span class="nf">suptitle</span><span class="p">(</span><span class="sh">"</span><span class="s">Intuition behind Activation Functions</span><span class="sh">"</span><span class="p">)</span>
+  <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nf">plot</span><span class="p">(</span><span class="n">input_crnts</span><span class="p">,</span> <span class="n">firing_rates</span><span class="p">)</span>
+  <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nf">set_xlabel</span><span class="p">(</span><span class="sh">"</span><span class="s">Input Current</span><span class="sh">"</span><span class="p">)</span>
+  <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nf">set_ylabel</span><span class="p">(</span><span class="sh">"</span><span class="s">Firing Rate in $Hz$</span><span class="sh">"</span><span class="p">)</span>
+  <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nf">set_title</span><span class="p">(</span><span class="sh">"</span><span class="s">Firing Rate vs Input Current</span><span class="sh">"</span><span class="p">)</span>
+  <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nf">plot</span><span class="p">()</span>
 
-  <span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="n">plot</span><span class="p">(</span><span class="n">input_crnts</span><span class="p">,</span> <span class="p">[</span><span class="n">sigmoid</span><span class="p">(</span><span class="n">crnt</span><span class="p">)</span> <span class="k">for</span> <span class="n">crnt</span> <span class="ow">in</span> <span class="n">input_crnts</span><span class="p">])</span>
-  <span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s">"Input Current"</span><span class="p">)</span>
-  <span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s">"Sigmoid Function Output"</span><span class="p">)</span>
-  <span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="n">set_title</span><span class="p">(</span><span class="s">"Sigmoid Activation Function"</span><span class="p">)</span>
-  <span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="n">plot</span><span class="p">()</span>
+  <span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">plot</span><span class="p">(</span><span class="n">input_crnts</span><span class="p">,</span> <span class="p">[</span><span class="nf">sigmoid</span><span class="p">(</span><span class="n">crnt</span><span class="p">)</span> <span class="k">for</span> <span class="n">crnt</span> <span class="ow">in</span> <span class="n">input_crnts</span><span class="p">])</span>
+  <span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">set_xlabel</span><span class="p">(</span><span class="sh">"</span><span class="s">Input Current</span><span class="sh">"</span><span class="p">)</span>
+  <span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">set_ylabel</span><span class="p">(</span><span class="sh">"</span><span class="s">Sigmoid Function Output</span><span class="sh">"</span><span class="p">)</span>
+  <span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">set_title</span><span class="p">(</span><span class="sh">"</span><span class="s">Sigmoid Activation Function</span><span class="sh">"</span><span class="p">)</span>
+  <span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">plot</span><span class="p">()</span>
 
-  <span class="n">axs</span><span class="p">[</span><span class="mi">2</span><span class="p">].</span><span class="n">plot</span><span class="p">(</span><span class="n">input_crnts</span><span class="p">,</span> <span class="p">[</span><span class="n">relu</span><span class="p">(</span><span class="n">crnt</span><span class="p">)</span> <span class="k">for</span> <span class="n">crnt</span> <span class="ow">in</span> <span class="n">input_crnts</span><span class="p">])</span>
-  <span class="n">axs</span><span class="p">[</span><span class="mi">2</span><span class="p">].</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s">"Input Current"</span><span class="p">)</span>
-  <span class="n">axs</span><span class="p">[</span><span class="mi">2</span><span class="p">].</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s">"ReLU Function Output"</span><span class="p">)</span>
-  <span class="n">axs</span><span class="p">[</span><span class="mi">2</span><span class="p">].</span><span class="n">set_title</span><span class="p">(</span><span class="s">"ReLU Activation Function"</span><span class="p">)</span>
-  <span class="n">axs</span><span class="p">[</span><span class="mi">2</span><span class="p">].</span><span class="n">plot</span><span class="p">()</span>
+  <span class="n">axs</span><span class="p">[</span><span class="mi">2</span><span class="p">].</span><span class="nf">plot</span><span class="p">(</span><span class="n">input_crnts</span><span class="p">,</span> <span class="p">[</span><span class="nf">relu</span><span class="p">(</span><span class="n">crnt</span><span class="p">)</span> <span class="k">for</span> <span class="n">crnt</span> <span class="ow">in</span> <span class="n">input_crnts</span><span class="p">])</span>
+  <span class="n">axs</span><span class="p">[</span><span class="mi">2</span><span class="p">].</span><span class="nf">set_xlabel</span><span class="p">(</span><span class="sh">"</span><span class="s">Input Current</span><span class="sh">"</span><span class="p">)</span>
+  <span class="n">axs</span><span class="p">[</span><span class="mi">2</span><span class="p">].</span><span class="nf">set_ylabel</span><span class="p">(</span><span class="sh">"</span><span class="s">ReLU Function Output</span><span class="sh">"</span><span class="p">)</span>
+  <span class="n">axs</span><span class="p">[</span><span class="mi">2</span><span class="p">].</span><span class="nf">set_title</span><span class="p">(</span><span class="sh">"</span><span class="s">ReLU Activation Function</span><span class="sh">"</span><span class="p">)</span>
+  <span class="n">axs</span><span class="p">[</span><span class="mi">2</span><span class="p">].</span><span class="nf">plot</span><span class="p">()</span>
 
-<span class="n">plot_firing_rates_and_act_fns</span><span class="p">(</span><span class="n">firing_rates</span><span class="p">,</span> <span class="n">input_crnts</span><span class="p">)</span>
+<span class="nf">plot_firing_rates_and_act_fns</span><span class="p">(</span><span class="n">firing_rates</span><span class="p">,</span> <span class="n">input_crnts</span><span class="p">)</span>
 </code></pre></div></div>
 
 <center><img src="output_23_0.png" alt="output_23_0" width="1000" /></center>

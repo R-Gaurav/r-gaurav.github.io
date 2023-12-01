@@ -1,0 +1,7 @@
+source 'https://rubygems.org'
+gem 'multi_json'
+gem 'rack'
+gem 'rspec'
+gem 'jekyll'
+gem 'jekyll-theme-hacker'
+gem 'jekyll-scholar'
