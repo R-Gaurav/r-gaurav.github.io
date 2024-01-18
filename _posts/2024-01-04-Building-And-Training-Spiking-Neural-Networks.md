@@ -117,6 +117,7 @@ For convenience and uniformity of spiking layers in our SNN, I first implement t
 import torch
 from abc import abstractmethod
 import numpy as np
+import torchvision
 
 V_THR = 1.0
 DEVICE = "cpu" # Change it to "cuda" if you have an NVIDIA-GPU.
@@ -149,11 +150,18 @@ class BaseSpkNeuron(object):
     mask = self._v < 0 # Mask to rectify the voltage if negative.
     self._v[mask] = 0
 
-  def reinitialize_voltage(self):
+  def re_initialize_voltage(self):
     """
     Resets all the neurons' voltage to zero.
     """
     self._v = torch.zeros_like(self._v)
+
+  def reset_voltage(self, spikes):
+    """
+    Reset the voltage of the neurons which spiked to zero.
+    """
+    mask = spikes.detach() > 0
+    self._v[mask] = 0
 
   @abstractmethod
   def spike_and_reset_voltage(self):
@@ -170,8 +178,6 @@ In the above class definition, note that all the child classes implement the spi
 The concept of using a Surrogate Spike-Derivative in place of the ill-defined $\frac{d\Theta(x)}{dx}$ has been explored by a number of researchers to train the SNNs directly. Here I use the the partial derivative of the fast sigmoid function $f(x) = \frac{x}{(1 + |x|)}$, i.e., $f^\prime(x) = \frac{1}{(1+|x|)^2}$ as $\Theta^\prime(x)$ (as used by [F. Zenke](https://github.com/fzenke/spytorch/tree/main/notebooks) -- basis of this tutorial). The figure below shows the plot of $f(x)$ in blue, and of $f^\prime(x)$ in red. As can be observed, $f^\prime(x)$ isn't $0$ everywhere and is maximum $1$ at $x=0$. Replacing the ill-defined $\Theta^\prime(x)$ with $f^\prime(x)$ and using it in conjunction with Back-prop to natively train the SNNs is called the Surrogate Gradient Descent method -- as made popular by [F. Zenke](https://scholar.google.com/citations?user=_IxvO8QAAAAJ&hl=en&oi=ao) and [E. Neftci](https://scholar.google.com/citations?user=yYT6jtkAAAAJ&hl=en&oi=ao). 
 
 Below is the code which enables the use of `surrogate-derivatives` while training the SNNs via BPTT.
-
-![png](srgt_drtv_spike.png)
 
 
 ```python
@@ -212,7 +218,7 @@ class SrgtDrtvSpike(torch.autograd.Function):
     """
     x, = ctx.saved_tensors
     grad_input = grad_output.clone()
-    local_grad = grad_output * 1.0/((1.0 + torch.abs(x)*SGSpike.scale)**2)
+    local_grad = grad_output * 1.0/((1.0 + torch.abs(x)*SrgtDrtvSpike.scale)**2)
     return local_grad
 
 spike_func = SrgtDrtvSpike.apply
@@ -241,8 +247,9 @@ class SpkEncoderLayer(BaseSpkNeuron):
 
   def spike_and_reset_voltage(self):
     delta_v = self._v - self._v_thr
-    spikes = delta_v > 0
-    self._v[spikes.detach()] = 0
+    spikes = torch.zeros_like(delta_v)
+    spikes[delta_v > 0] = 1.0
+    self.reset_voltage(spikes)
 
     return spikes
 
@@ -283,7 +290,7 @@ class SpkHiddenLayer(BaseSpkNeuron, torch.nn.Module):
   def spike_and_reset_voltage(self): # Implement the abstract method.
     delta_v = self._v - self._v_thr
     spikes = spike_func(delta_v)
-    self._v[spikes.detach] = 0 
+    self.reset_voltage(spikes)
 
     return spikes
 
@@ -312,11 +319,175 @@ class SpkOutputLayer(SpkHiddenLayer):
     super().__init__(n_prev, n_otp)
 ```
 
-# Training and Evaluation
-
-We now directly train and evaluate our SNN on the MNIST data. Since the SNN here is a `Dense-SNN`, with the input `SpkEncoderLayer` being a flat spiking layer, I flatten the MNIST images before feeding them to the SNN. Then I use the `Adam` optimizer to train the `Dense-SNN` via BPTT -- i.e., internally, PyTorch unrolls the `Dense-SNN` in time and the propagates the error-gradients). The loss is defined on the mean firing rates of the `SpkOutputLayer` class neurons, using the Negative Log Likelihood loss function.
+# Create the `DenseSNN`
 
 
 ```python
+class DenseSNN(torch.nn.Module):
+  def __init__(self, n_ts):
+    """
+    Instantiates the DenseSNN class comprising of Spiking Encoder and Hidden 
+    layers.
+    """
+    super().__init__()
+    self.n_ts = n_ts
+    self.enc_lyr = SpkEncoderLayer(n_neurons=784) # Image to Spike Encoder layer.
+    self.hdn_lyrs = torch.nn.ModuleList()
+    self.hdn_lyrs.append(SpkHiddenLayer(n_prev=784, n_hidn=512)) # 1st Hidden Layer.
+    self.hdn_lyrs.append(SpkHiddenLayer(n_prev=512, n_hidn=128)) # 2nd Hidden Layer.
+    self.otp_lyr = SpkOutputLayer(n_prev=128, n_otp=10)
 
+  def _forward_through_time(self, x):
+    """
+    Implements the forward function through all the simulation time-steps.
+    
+    Args: 
+      x <Tensor>: Batch input of shape: (batch_size, 784). Note: 28x28 = 784.
+    """
+    all_ts_out_spikes = torch.zeros(BATCH_SIZE, self.n_ts, 10) # #Classes = 10.
+    for t in range(self.n_ts):
+      spikes = self.enc_lyr.encode(x)
+      for hdn_lyr in self.hdn_lyrs:
+        spikes = hdn_lyr(spikes)
+      spikes = self.otp_lyr(spikes)
+      all_ts_out_spikes[:, t] = spikes
+
+    return all_ts_out_spikes
+
+  def forward(self, x):
+    """
+    Implements the forward function. 
+
+    Args:
+      x <Tensor>: Batch input of shape: (batch_size, 784). Note: 28x28 = 784.
+    """
+    self.enc_lyr.re_initialize_voltage()
+    for hdn_lyr in self.hdn_lyrs:
+      hdn_lyr.re_initialize_neuron_states()
+    self.otp_lyr.re_initialize_neuron_states()
+
+    spikes = self._forward_through_time(x)
+    return spikes
 ```
+
+# Training and Evaluation
+
+We now directly train and evaluate our SNN on the MNIST dataset. Since the SNN here is a `Dense-SNN`, with the input `SpkEncoderLayer` being a flat spiking layer, I flatten the MNIST images before feeding them to the SNN. Note that unlike the ANNs, the SNNs are inherently temporal and are supposed to be executed for a certain number of time-steps to build the neuron states and let them spike; this is done while training and inference too. Therefore, I set the number of time-steps (or the presentation time) for each image as $25$ time-steps. Increasing the presentation time will help increase the accuracy. To train the `DenseSNN`'s weights, I use the `Adam` optimizer via BPTT -- i.e., internally, PyTorch unrolls the `Dense-SNN` in time and the propagates the error-gradients. The loss is defined on the mean firing rates of the `SpkOutputLayer` class neurons, using the Negative Log Likelihood loss function.
+
+
+```python
+class TrainEvalDenseSNN(object):
+  def __init__(self, n_ts=25, epochs=10):
+    """
+    Args:
+      n_ts <int>: Number of time-steps to present each image for training/test.
+      epochs <int>: Number of training epochs.
+    """
+    self.epochs = epochs
+    self.log_softmax = torch.nn.LogSoftmax(dim=1)
+    self.loss_function = torch.nn.NLLLoss()
+    self.model = DenseSNN(n_ts=n_ts).to(DEVICE) # n_ts = presentation time-steps.
+    self.optimizer = torch.optim.Adam(self.model.parameters(), lr=1e-3)
+
+    # Get the Train- and Test- Loader of the MNIST dataset.
+    self.train_loader = torch.utils.data.DataLoader(
+        torchvision.datasets.MNIST(root='./data', train=True, download=True,
+                      transform=torchvision.transforms.Compose([
+    # ToTensor transform automatically converts all image pixels in range [0, 1].
+                          torchvision.transforms.ToTensor()
+                          ])
+                      ),
+        batch_size=BATCH_SIZE, shuffle=True)
+    self.test_loader = torch.utils.data.DataLoader(
+        torchvision.datasets.MNIST(root='./data', train=False, download=True, 
+                       transform=torchvision.transforms.Compose([
+    # ToTensor transform automatically converts all image pixels in range [0, 1].
+                           torchvision.transforms.ToTensor()
+                           ])
+                      ),
+        batch_size=4*BATCH_SIZE, shuffle=True)
+
+  def train(self, epoch):
+    batch_accs = []
+    for trn_x, trn_y in self.train_loader:
+      # Each batch trn_x and trn_y is of shape (BATCH_SIZE, 1, 28, 28) and 
+      # (BATCH_SIZE) respectively, where the image pixel values are between 
+      # [0, 1], and the image class is a numeral between [0, 9].
+      trn_x = trn_x.flatten(start_dim=1).to(DEVICE) # Flatten from dim 1 onwards.
+      all_ts_spikes = self.model(trn_x) # Output = (BATCH_SIZE, n_ts, #Classes).
+      mean_spk_rate = torch.mean(all_ts_spikes, axis=1) # Mean over time-steps.
+      # Shape of mean_spk_rate is (BATCH_SIZE, # Classes).
+      trn_preds = torch.argmax(mean_spk_rate, axis=1) # ArgMax over classes.
+      # Shape of trn_preds is (BATCH_SIZE,).
+      batch_accs.append(torch.mean(
+          torch.as_tensor(trn_preds.detach() == trn_y.detach(), dtype=float)))
+
+      # Compute Training Loss and Back-propagate.
+      log_mean_vals = self.log_softmax(mean_spk_rate)
+      loss_value = self.loss_function(log_mean_vals, trn_y)
+      self.optimizer.zero_grad()
+      loss_value.backward()
+      self.optimizer.step()
+
+    print("Training Epoch: {0}, Training Accuracy: {1}".format(
+          epoch, torch.mean(torch.as_tensor(batch_accs))))
+
+  def eval(self, epoch):
+    for tst_x, tst_y in self.test_loader:
+      # Each batch tst_x and tst_y is of shape (4*BATCH_SIZE, 1, 28, 28) and 
+      # (4*BATCH_SIZE) respectively, where the image pixel values are between 
+      # [0, 1], and the image class is a numeral between [0, 9].
+      tst_x = tst_x.flatten(start_dim=1).to(DEVICE), # Flatten from dim 1 onwards.
+
+  def train_eval(self):
+    for epoch in range(1, self.epochs+1):
+      self.train(epoch)
+      self.eval(epoch)
+```
+
+
+```python
+trev_model = TrainEvalDenseSNN(n_ts=40, epochs=5)
+trev_model.train_eval()
+```
+
+    6.6%
+
+    Downloading http://yann.lecun.com/exdb/mnist/train-images-idx3-ubyte.gz
+    Downloading http://yann.lecun.com/exdb/mnist/train-images-idx3-ubyte.gz to ./data/MNIST/raw/train-images-idx3-ubyte.gz
+
+
+    100.0%
+
+
+    Extracting ./data/MNIST/raw/train-images-idx3-ubyte.gz to ./data/MNIST/raw
+    
+    Downloading http://yann.lecun.com/exdb/mnist/train-labels-idx1-ubyte.gz
+    Downloading http://yann.lecun.com/exdb/mnist/train-labels-idx1-ubyte.gz to ./data/MNIST/raw/train-labels-idx1-ubyte.gz
+
+
+    100.0%
+    55.6%
+
+    Extracting ./data/MNIST/raw/train-labels-idx1-ubyte.gz to ./data/MNIST/raw
+    
+    Downloading http://yann.lecun.com/exdb/mnist/t10k-images-idx3-ubyte.gz
+    Downloading http://yann.lecun.com/exdb/mnist/t10k-images-idx3-ubyte.gz to ./data/MNIST/raw/t10k-images-idx3-ubyte.gz
+
+
+    100.0%
+    100.0%
+
+
+    Extracting ./data/MNIST/raw/t10k-images-idx3-ubyte.gz to ./data/MNIST/raw
+    
+    Downloading http://yann.lecun.com/exdb/mnist/t10k-labels-idx1-ubyte.gz
+    Downloading http://yann.lecun.com/exdb/mnist/t10k-labels-idx1-ubyte.gz to ./data/MNIST/raw/t10k-labels-idx1-ubyte.gz
+    Extracting ./data/MNIST/raw/t10k-labels-idx1-ubyte.gz to ./data/MNIST/raw
+    
+    Training Epoch: 1, Training Accuracy: 0.6939
+    Training Epoch: 2, Training Accuracy: 0.8173
+    Training Epoch: 3, Training Accuracy: 0.8949166666666667
+    Training Epoch: 4, Training Accuracy: 0.9120333333333335
+    Training Epoch: 5, Training Accuracy: 0.9185833333333334
+
