@@ -463,8 +463,8 @@ class TrainEvalDenseSNN(object):
     self.model.eval()
     with torch.no_grad():
       for tst_x, tst_y in self.test_loader:
-      # Each batch tst_x and tst_y is of shape (4*BATCH_SIZE, 1, 28, 28) and 
-      # (4*BATCH_SIZE) respectively, where the image pixel values are between 
+      # Each batch tst_x and tst_y is of shape (BATCH_SIZE, 1, 28, 28) and 
+      # (BATCH_SIZE) respectively, where the image pixel values are between 
       # [0, 1], and the image class is a numeral between [0, 9].
         tst_x = tst_x.flatten(start_dim=1).to(DEVICE) # Flatten from dim 1 onwards.
         all_ts_out_spks = self.model(tst_x)
