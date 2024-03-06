@@ -122,7 +122,7 @@ plt.xlim([0, 100])
     
 
 
-# `Dense-SNN` layers
+# Dense-SNN layers
 
 Now that we have implemented a single `IF` neuron -- the fundamental unit of an SNN, we next focus on building and training a `Dense-SNN` from scratch. The architecture here consists of an input `Encoder` layer, followed by two `Hidden` layers and a final `Output` layer (all the layers are spiking). We will use the MNIST dataset, which will be flattened for the input to our `Dense-SNN`. The `Encoder` layer **rate** encodes the normalized pixel values to binary spikes, upon which, the `Dense` connections in the `Hidden` layers learn the feature maps. The `Dense` connection in the `Output` layer then learns the classication over the feature map via the `CrossEntropyLoss` function. 
 
@@ -142,7 +142,7 @@ BATCH_SIZE = 500 # Change it to suit your memory availability.
 TAU_CUR = 1e-3 # Time constant of current decay.
 ```
 
-### `BaseSpkNeuron` class
+### BaseSpkNeuron class
 
 This class implements the basic template of `IF` spiking neurons arranged in a vector/matrix form. It will be inherited by other classes, which implement the Encoding and Spiking-Hidden layers.
 
@@ -250,7 +250,7 @@ We use the `spike_func` defined above (via the class `SrgtDrtvSpike`) as the spi
 ## Spiking Layers
 Following are the implementations of the individual types of spiking layers in our `Dense-SNN`:
 
-### `SpkEncoderLayer` class
+### SpkEncoderLayer class
 
 This class encodes the normalized pixel values to spikes via **rate** encoding, where the <ins>number</ins> of output spikes is <ins>proportional</ins> to the magnitude of the pixel value. An encoding neuron does this by implementing the following **Current** equation: 
 
@@ -288,7 +288,7 @@ class SpkEncoderLayer(BaseSpkNeuron):
     return spikes
 ```
 
-### `SpkHiddenLayer` class
+### SpkHiddenLayer class
 
 This class implements the hidden layer of `IF` neurons. Note that, to enable synaptic-weight learning in the hidden layers, I am using the `spike_func` defined above, which not only generates spikes in the **forward** pass but also facilitates error back-propagation via **surrogate-derivatives** in the **backward** pass.
 
@@ -330,7 +330,7 @@ class SpkHiddenLayer(BaseSpkNeuron, torch.nn.Module):
     return spikes
 ```
 
-### `SpkOutputLayer` class
+### SpkOutputLayer class
 
 This class is exactly the same as the `SpkHiddenLayer` class, except that the number of neurons is set equal to the number of classes in the dataset.
 
@@ -346,7 +346,7 @@ class SpkOutputLayer(SpkHiddenLayer):
     super().__init__(n_prev, n_otp)
 ```
 
-# `Dense-SNN` implementation
+# Dense-SNN implementation
 
 Now that we have all the constituent spiking layers ready, we can simply create our `Dense-SNN`. Architecturally, it has got one `Encoder` layer: `SpkEncoderLayer` class, two `Hidden` layers: one each of `SpkHiddenLayer` class, and one `Output` layer: `SpkOutputLayer` class. 
 
