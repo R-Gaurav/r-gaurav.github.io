@@ -106,21 +106,10 @@ plt.subplot(1, 2, 2)
 plt.title("Spikes")
 plot_spikes(np.arange(0, T), spikes)
 plt.xlabel("Timesteps");
-plt.xlim([0, 100])
+plt.xlim([0, 100]);
 ```
 
-
-
-
-    (0.0, 100.0)
-
-
-
-
-    
 ![png](output_8_1.png)
-    
-
 
 # Dense-SNN layers
 
