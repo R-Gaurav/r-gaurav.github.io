@@ -7,15 +7,15 @@ In this long end-to-end tutorial, I will demonstrate how to train a Spiking Neur
 `Note`: Complete source code for this tutorial can be found on my [mnist-on-loihi](https://github.com/R-Gaurav/mnist-on-loihi) GitHub repository. Also, basic knowledge of Lava's `Process` and `ProcessModel` is necessary to follow this tutorial well; however, you are welcome to read it as I will be providing high-level explanations of the realted Lava APIs. You can learn more about Lava on its above-linked website.
 
 # Introduction
-Programming in Lava is _not_ easy! -- well... at least as of this date. Lava is a rich python library introduced by Intel to build, train, and deploy spiking networks on Intel's neuromorphic chips: $$\textsf{Loihi-1}$$ and $$\textsf{Loihi-2}$$. As of now, Lava supports [Deep Learning through SNNs](https://lava-nc.org/lava-lib-dl/index.html), dynamic spiking networks based on [Dynamic Neural Fields](https://lava-nc.org/lava-lib-dnf/lava.lib.dnf.html), and interestingly - mathematical [Constraint Optimization](https://lava-nc.org/lava-lib-optimization/lava.lib.optimization.html). There are **two** main ways to build and train Deep-SNNs in Lava through [Lava-DL](https://github.com/lava-nc/lava-dl): 
+Programming in Lava is _not_ easy! -- well... at least as of this date. Lava is a rich python library introduced by Intel to build, train, and deploy spiking networks on Intel's neuromorphic chips: $$\textsf{Loihi-1}$$ and $$\textsf{Loihi-2}$$. As of now, Lava supports [Deep Learning through SNNs](https://lava-nc.org/lava-lib-dl/index.html), dynamic spiking networks based on [Dynamic Neural Fields](https://lava-nc.org/lava-lib-dnf/lava.lib.dnf.html), and interestingly - mathematical [Constraint Optimization](https://lava-nc.org/lava-lib-optimization/lava.lib.optimization.html). There are **two** main ways to build and train Deep-SNNs in Lava through [Lava-DL](https://github.com/lava-nc/lava-dl):
 * (a) **ANN-to-SNN** via [Bootstrap](https://lava-nc.org/lava-lib-dl/bootstrap/index.html), and
 * (b) **Direct Training** via [SLAYER](https://lava-nc.org/lava-lib-dl/slayer/index.html)
 
-You can find more details and tutorials [here](https://lava-nc.org/dl.html). Note that after you have trained your Lava-based Deep-SNN, you can use Lava's [NetX](https://lava-nc.org/lava-lib-dl/netx/index.html) module to port your network to Loihi neuromorphic chips. 
+You can find more details and tutorials [here](https://lava-nc.org/dl.html). Note that after you have trained your Lava-based Deep-SNN, you can use Lava's [NetX](https://lava-nc.org/lava-lib-dl/netx/index.html) module to port your network to Loihi neuromorphic chips.
 
->`We here focus on building, (direct) training, and deploying an SNN comosed of only Dense layers via Lava's SLAYER and NetX APIs.`
+>`We here focus on building, (direct) training, and deploying an SNN composed of only Dense layers via Lava's SLAYER and NetX APIs; training on GPU, evaluation on Loihi-2.`
 
-`Note`: Here I am just presenting the main excerpts from the [mnist-on-loihi](https://github.com/R-Gaurav/mnist-on-loihi) repository necessary to understand my code. The library requirements and execution process/commands are mentioned in my repo's README. Also, needless to say, the Loihi-2 chip's simulation (henceforth, $$\textsf{Loihi-Sim}$$) runs on your CPU, while the Loihi-2 chip's actual hardware (henceforth, $$\textsf{Loihi-Hw}$$) can be accessed on the INRC cloud. 
+`Note`: Here I am just presenting the main excerpts from the [mnist-on-loihi](https://github.com/R-Gaurav/mnist-on-loihi) repository necessary to understand my code. The library requirements and execution process/commands are mentioned in my repo's README. Also, needless to say, the Loihi-2 chip's simulation (henceforth, $$\textsf{Loihi-Sim}$$) runs on your CPU, while the Loihi-2 chip's actual hardware (henceforth, $$\textsf{Loihi-Hw}$$) can be accessed on the INRC cloud.
 
 I am next introducing some very foundational details of Lava, related to this tutorial.
 
@@ -66,9 +66,9 @@ The idea is to first build a `Dense`-only SNN (using `slayer` APIs) composed of 
 ## Networks Architecture
 * On $$\textsf{GPU}:$$
 
-$$\texttt{ExpDataset} \rightarrow \texttt{SlayerDenseSNN}$$ 
+$$\texttt{ExpDataset} \rightarrow \texttt{SlayerDenseSNN}$$
 
-where $$\texttt{SlayerDenseSNN}$$ implies the network: 
+where $$\texttt{SlayerDenseSNN}$$ implies the network:
 
 $$\texttt{Dense CUBA(128)} \rightarrow \texttt{Dense CUBA(64)} \rightarrow \texttt{Dense CUBA(10)}$$
 
@@ -90,9 +90,9 @@ I am next explaining my code in details, as well as the related nuances of Lava.
 
 
 ## $$\texttt{ExpDataset}$$ Class
-This class is fairly easy to understand, where I use the [Nengo/NEF](https://www.nengo.ai/) defined way to Rate-encode the image pixels to binary spikes via the equation: 
+This class is fairly easy to understand, where I use the [Nengo/NEF](https://www.nengo.ai/) defined way to Rate-encode the image pixels to binary spikes via the equation:
 
-$$J = \alpha\times<e.x> + \beta$$ 
+$$J = \alpha\times<e.x> + \beta$$
 
 where $$J$$ is the input current to the encoding neuron, $$\alpha$$ and $$\beta$$ are its `gain` and `bias` values. Note that $$x$$ is the normalized pixel value to be encoded, and since it's non-negative, the value of the encoder $$e$$ is kept $$+1$$ here ($$<e.x>$$ denotes **dot** product). The generated spike trains are fed to the `SlayerDenseSNN`.
 
@@ -158,12 +158,12 @@ self.out_adp.out.connect(self.spk_to_cls.spikes_in)
 # Connect ImgToSpk Input directly to SpkToCls Output for ground truths.
 self.img_to_spk.label_out.connect(self.spk_to_cls.label_in)
 ```
-where $$\texttt{self.img_to_spk}$$ and $$\texttt{self.spk_to_cls}$$ are the instances of the $$\texttt{InpImgToSpk}$$ and $$\texttt{OutSpkToCls}$$ `Process`es respectively, $$\texttt{self.inp_adp}$$ and $$\texttt{self.otp_adp}$$ are the instances of the $$\texttt{InputAdapter}$$ and $$\texttt{OutputAdapter}$$ `Process`es respectively, and $$\texttt{self.net}$$ is the `netx`-obtained (trained) $$\texttt{SlayerDenseSNN}$$ network. 
+where $$\texttt{self.img_to_spk}$$ and $$\texttt{self.spk_to_cls}$$ are the instances of the $$\texttt{InpImgToSpk}$$ and $$\texttt{OutSpkToCls}$$ `Process`es respectively, $$\texttt{self.inp_adp}$$ and $$\texttt{self.otp_adp}$$ are the instances of the $$\texttt{InputAdapter}$$ and $$\texttt{OutputAdapter}$$ `Process`es respectively, and $$\texttt{self.net}$$ is the `netx`-obtained (trained) $$\texttt{SlayerDenseSNN}$$ network.
 
 With respect to the above `netx`-obtained network, note that the $$\texttt{trnd_net_path}$$ is actually the saved (trained) $$\texttt{SlayerDenseSNN}$$ model and $$\texttt{reset_interval}$$ is equal to the presentation time-steps of an image. The $$\texttt{reset_interval}$$ denotes the number of time-steps after which the neurons in the `netx`-obtained network should be reset for a fresh input. Also, $$\texttt{reset_offset}$$ is set to $$1$$ because I want the `netx`-obtained network to reset after every $$\texttt{reset_interval}$$ with a positive offset of $$1$$ time-step (i.e., the phase-shift of the $$\texttt{reset_interval}$$ is $$1$$) -- reasons will be explained later.
 
 ## $$\texttt{InpImgToSpk}$$ and $$\texttt{PyInpImgToSpkModel}$$ Classes
-The `Process`: `InpImgToSpike` and its corresponding `ProcessModel`: `PyInpImgToSpkModel` implement the code to Rate-encode the normalized pixel values to binary spikes - in a fashion similar to the `ExpDataset` class; the **input** spikes are fed to the `netx`-obtained network's **Input** interface. 
+The `Process`: `InpImgToSpike` and its corresponding `ProcessModel`: `PyInpImgToSpkModel` implement the code to Rate-encode the normalized pixel values to binary spikes - in a fashion similar to the `ExpDataset` class; the **input** spikes are fed to the `netx`-obtained network's **Input** interface.
 
 The following code (in $$\texttt{utils.py}$$):
 
@@ -172,7 +172,7 @@ The following code (in $$\texttt{utils.py}$$):
 @requires(CPU)
 class PyInpImgToSpkModel(PyLoihiProcessModel):
 ```
-associates the `Process` - $$\texttt{InpImgToSpk}$$ to its `ProcessModel` - $$\texttt{PyInpImgToSpkModel}$$ and instructs it to execute according to the `LoihiProtocol` on the host `CPU`. Note that as per the `LoihiProtocol`, the constituent `run_spk()` phase/function is executed **first**, followed by the `post_guard()` and `run_post_mgmt()` phases. Note that the $$\texttt{run_post_mgmt()}$$ phase is executed **only** when the $$\texttt{post_guard()}$$ phase returns $$\texttt{True}$$, while the $$\texttt{run_spk()}$$ phase executes every time-step unchecked/unconditionally. 
+associates the `Process` - $$\texttt{InpImgToSpk}$$ to its `ProcessModel` - $$\texttt{PyInpImgToSpkModel}$$ and instructs it to execute according to the `LoihiProtocol` on the host `CPU`. Note that as per the `LoihiProtocol`, the constituent `run_spk()` phase/function is executed **first**, followed by the `post_guard()` and `run_post_mgmt()` phases. Note that the $$\texttt{run_post_mgmt()}$$ phase is executed **only** when the $$\texttt{post_guard()}$$ phase returns $$\texttt{True}$$, while the $$\texttt{run_spk()}$$ phase executes every time-step unchecked/unconditionally.
 ### Components of $$\texttt{PyInpImgToSpkModel}$$
 Following is the code of $$\texttt{run_spk()}$$ (in $$\texttt{utils.py}$$):
 ```python
@@ -205,15 +205,15 @@ def run_post_mgmt(self):
     self.v = np.zeros(self.v.shape, dtype=float)
     self.curr_img_id += 1
 ```
-As can be seen above, the input image $$\texttt{self.inp_img}$$ and the corresponding ground truth $$\texttt{self.ground_truth_label}$$ are updated as per the current image index $$\texttt{self.curr_img_id}$$, and the encoding neurons' voltage $$\texttt{self.v}$$ is reset to zeros -- thus readying for the next iteration of $$\texttt{run_spk()}$$ (i.e., Rate-encoding the new updated image) for the next $$\texttt{self.n_ts}$$ time-steps. Finally, $$\texttt{self.curr_img_id}$$ is updated to its next value - to be used in the next execution of $$\texttt{run_post_mgmt()}$$. 
+As can be seen above, the input image $$\texttt{self.inp_img}$$ and the corresponding ground truth $$\texttt{self.ground_truth_label}$$ are updated as per the current image index $$\texttt{self.curr_img_id}$$, and the encoding neurons' voltage $$\texttt{self.v}$$ is reset to zeros -- thus readying for the next iteration of $$\texttt{run_spk()}$$ (i.e., Rate-encoding the new updated image) for the next $$\texttt{self.n_ts}$$ time-steps. Finally, $$\texttt{self.curr_img_id}$$ is updated to its next value - to be used in the next execution of $$\texttt{run_post_mgmt()}$$.
 
-Now that we have the component phases of $$\texttt{PyInpImgToSpkModel}$$ `ProcessModel` ready, let's closely look at their operations in tandem. 
+Now that we have the component phases of $$\texttt{PyInpImgToSpkModel}$$ `ProcessModel` ready, let's closely look at their operations in tandem.
 
 ### Holistic Operation of $$\texttt{InpImgToSpk}$$
-Before we begin to understand the `Process` $$\texttt{InpImgToSpk}$$, let's assume that the values of $$\texttt{self.curr_img_id}$$ and $$\texttt{self.n_ts}$$ are $$0$$ and $$20$$ respectively. 
+Before we begin to understand the `Process` $$\texttt{InpImgToSpk}$$, let's assume that the values of $$\texttt{self.curr_img_id}$$ and $$\texttt{self.n_ts}$$ are $$0$$ and $$20$$ respectively.
 
 * $$\texttt{self.time_step}=1$$:
-  
+
 When the class $$\texttt{InpImgToSpk}$$ is initialized, the $$\texttt{self.inp_img}$$ and $$\texttt{self.v}$$ arrays are all set to zeros. Next, when it is run, the $$\texttt{self.time_step}$$ starts at $$1$$ and $$\texttt{run_spk()}$$ is the first phase to be executed - thus, it updates the encoding neurons' $$\texttt{self.v}$$, but since $$\texttt{self.imp_img}$$ is all zeros (with $$\texttt{self.gain}=1$$ and $$\texttt{self.bias}=0$$), $$\texttt{self.v}$$ remains all zeros. Thus _no_ spikes are generated and sent. After the $$\texttt{run_spk()}$$ phase is over, the $$\texttt{post_guard()}$$ phase is invoked. Keep in mind that $$\texttt{self.time_step}$$ is still $$1$$. Now, the line $$\texttt{if self.time_step % self.n_ts == 1} \implies \texttt{1 % 20}$$, which is equal to $$1$$, thus, $$\texttt{post_guard()}$$ returns $$\texttt{True}$$ and the $$\texttt{run_post_mgmt()}$$ phase is invoked. Note that $$\texttt{self.time_step}$$ is still $$1$$.
 
 In the $$\texttt{run_post_mgmt()}$$ phase, $$\texttt{self.inp_img}$$ is updated with the normalized pixel values of the first test-image, i.e., at the index $$\texttt{self.curr_img_id} = 0$$. Following this, $$\texttt{self.ground_truth_label}$$ is updated, and the corresponding label is sent to the receiving `Process` (i.e., to $$\texttt{OutSpkToCls}$$) in the same $$\texttt{self.time_step}=1$$. Finally, the encoding neurons voltage $$\texttt{self.v}$$ is reset to $$0$$ for fresh Rate-encoding of the new input image, and $$\texttt{self.curr_img_id}$$ is updated to the next value, i.e., $$1$$.
@@ -236,11 +236,11 @@ The $$\texttt{run_spk()}$$ phase is executed first with the same image $$\texttt
 
 * $$\texttt{self.time_step}=21$$:
 
-Now, note that $$\texttt{self.n_ts}=20$$ time-steps (i.e., the presentation time-steps of each image) has already passed, however, $$\texttt{self.inp_img}$$ is still the same _old_ image! Therefore, the $$\texttt{if}$$ block in $$\texttt{run_spk()}$$ is _necessary_ which resets the $$\texttt{self.inp_img}$$ and $$\texttt{self.v}$$ to all zeros; this is similar to the case when $$\texttt{self.time_step}=1$$. Subsequently, _no_ spikes are generated and sent to the receiving `Process` (i.e., to the `netx`-obtained network). However, after the $$\texttt{run_spk()}$$ phase is over, $$\texttt{post_guard()}$$ returns $$\texttt{True}$$ and the $$\texttt{run_post_mgmt()}$$ phase is executed, which updates $$\texttt{self.inp_img}$$ to the normalized pixel values of the test-image at index $$\texttt{self.curr_img_id}=1$$ (recollect that $$\texttt{self.curr_img_id}$$ was already updated to $$1$$ in $$\texttt{self.time_step}=1$$); $$\texttt{self.ground_truth_label}$$ is also updated accordingly and sent to the receiving `Process` (i.e., to $$\texttt{OutSpkToCls}$$), $$\texttt{self.v}$$ is reset to all zeros for fresh Rate-encoding of the new $$\texttt{self.inp_img}$$ image, and finally, $$\texttt{self.curr_img_id}$$ is updated to its next value, i.e., $$2$$. 
+Now, note that $$\texttt{self.n_ts}=20$$ time-steps (i.e., the presentation time-steps of each image) has already passed, however, $$\texttt{self.inp_img}$$ is still the same _old_ image! Therefore, the $$\texttt{if}$$ block in $$\texttt{run_spk()}$$ is _necessary_ which resets the $$\texttt{self.inp_img}$$ and $$\texttt{self.v}$$ to all zeros; this is similar to the case when $$\texttt{self.time_step}=1$$. Subsequently, _no_ spikes are generated and sent to the receiving `Process` (i.e., to the `netx`-obtained network). However, after the $$\texttt{run_spk()}$$ phase is over, $$\texttt{post_guard()}$$ returns $$\texttt{True}$$ and the $$\texttt{run_post_mgmt()}$$ phase is executed, which updates $$\texttt{self.inp_img}$$ to the normalized pixel values of the test-image at index $$\texttt{self.curr_img_id}=1$$ (recollect that $$\texttt{self.curr_img_id}$$ was already updated to $$1$$ in $$\texttt{self.time_step}=1$$); $$\texttt{self.ground_truth_label}$$ is also updated accordingly and sent to the receiving `Process` (i.e., to $$\texttt{OutSpkToCls}$$), $$\texttt{self.v}$$ is reset to all zeros for fresh Rate-encoding of the new $$\texttt{self.inp_img}$$ image, and finally, $$\texttt{self.curr_img_id}$$ is updated to its next value, i.e., $$2$$.
 
 * $$\texttt{self.time_step}=22$$:
 
-The $$\texttt{run_spk()}$$ phase is called first, and it updates $$\texttt{self.v}$$ corresponding to the new $$\texttt{self.inp_img}$$ at index $$\texttt{self.curr_img_id}=1$$, thereby generating and sending the spikes if the threshold criterion is met; $$\texttt{post_guard()}$$ returns $$\texttt{False}$$ and $$\texttt{run_post_mgmt}$$ is _not_ called.  
+The $$\texttt{run_spk()}$$ phase is called first, and it updates $$\texttt{self.v}$$ corresponding to the new $$\texttt{self.inp_img}$$ at index $$\texttt{self.curr_img_id}=1$$, thereby generating and sending the spikes if the threshold criterion is met; $$\texttt{post_guard()}$$ returns $$\texttt{False}$$ and $$\texttt{run_post_mgmt}$$ is _not_ called.
 
 Henceforward, I believe, it should be easy to follow this repetition as long as the Lava network is run for. Also, before we miss the context, coming back to the $$\texttt{reset_offset}$$ in $$\texttt{netx.hdf5.Network()}$$, hopefully it should be clear now on why $$\texttt{reset_offset}$$ was set to $$1$$. This was done such that (in conjunction with the $$\texttt{reset_interval}=20$$) the `netx`-obtained network resets after $$21^{\text{st}}, 41^{\text{st}}, 61^{\text{st}}...$$ time-steps, because, as we saw above, the $$\texttt{self.inp_img}$$ gets reset (and assigned a new test-image) after $$21^{\text{st}}, 41^{\text{st}}, 61^{\text{st}}...$$ time-steps; thus, the `netx`-obtained network resets in _synchrony_ with the input test-image.
 
@@ -281,7 +281,7 @@ def run_post_mgmt(self):
 ```
 As can be seen above, when the $$\texttt{run_post_mgmt()}$$ phase is executed (i.e., after every $$\texttt{self.n_ts} = 20$$ time-steps), the $$\texttt{true_label}$$ is received from the sending `Process` (i.e., from $$\texttt{InpImgToSpk}$$) and the $$\texttt{pred_label}$$ is computed as the index having the maximum number of accumulated spikes. The respective label arrays are also populated at the current image index $$\texttt{self.curr_idx}$$, thereafter updating $$\texttt{self.curr_idx}$$ and resetting the $$\texttt{self.spikes_accum}$$ to store the output spikes corresponding to the next image (during the next $$\texttt{self.n_ts}$$ time-steps). We now look into the operation of all these three phases in tandem.
 ### Holistic Operation of $$\texttt{OutSpkToCls}$$
-Let's begin by assuming $$\texttt{self.curr_idx}=0$$ at the start of running the $$\texttt{OutSpkToCls}$$ `Process`. 
+Let's begin by assuming $$\texttt{self.curr_idx}=0$$ at the start of running the $$\texttt{OutSpkToCls}$$ `Process`.
 
 * $$\texttt{self.time_step}=1$$:
 
@@ -295,11 +295,11 @@ This sort of processing continues for the test-image at $$\texttt{self.curr_img_
 
 * $$\texttt{self.time_step}=20$$:
 
-The $$\texttt{run_spk()}$$ phase is called first, it receives the spikes from the `netx`-obtained network and updates $$\texttt{self.spikes_accum}$$. This time the $$\texttt{post_guard()}$$ phase returns $$\texttt{True}$$ and the $$\texttt{run_post_mgmt()}$$ phase is called. It receives the ground truth label sent from the $$\texttt{InpImgToSpk}$$ `Process` and computes the predicted label for the current input image at $$\texttt{self.curr_img_id}=0$$ from $$\texttt{self.spikes_accum}$$ and populates the respective label arrays at the $$\texttt{self.curr_id}=0$$ index. It then updates $$\texttt{self.curr_id}$$ to its next value $$1$$ and resets the $$\texttt{self.spikes_accum}$$ to all zeros, thereby setting the stage for processing the next input image for the next $$\texttt{self.n_ts}=20$$ presentation time-steps. 
+The $$\texttt{run_spk()}$$ phase is called first, it receives the spikes from the `netx`-obtained network and updates $$\texttt{self.spikes_accum}$$. This time the $$\texttt{post_guard()}$$ phase returns $$\texttt{True}$$ and the $$\texttt{run_post_mgmt()}$$ phase is called. It receives the ground truth label sent from the $$\texttt{InpImgToSpk}$$ `Process` and computes the predicted label for the current input image at $$\texttt{self.curr_img_id}=0$$ from $$\texttt{self.spikes_accum}$$ and populates the respective label arrays at the $$\texttt{self.curr_id}=0$$ index. It then updates $$\texttt{self.curr_id}$$ to its next value $$1$$ and resets the $$\texttt{self.spikes_accum}$$ to all zeros, thereby setting the stage for processing the next input image for the next $$\texttt{self.n_ts}=20$$ presentation time-steps.
 
 * $$\texttt{self.time_step}=21$$:
 
-Note that in this time-step, $$\texttt{self.inp_img}$$ and $$\texttt{self.v}$$ is reset to all zeros in the $$\texttt{run_spk()}$$ phase of the $$\texttt{InpImgToSpk}$$ `Process`. Also, $$\texttt{post_guard()}$$ (in $$\texttt{InpImgToSpk}$$) evaluates to $$\texttt{True}$$ and the $$\texttt{run_post_mgmt()}$$ phase is called in the $$\texttt{InpImgToSpk}$$ `Process`, thereby, updating $$\texttt{self.inp_img}$$ and $$\texttt{self.ground_truth_label}$$ to the next image and ground truth (at index $$\texttt{self.curr_img_id}=1$$) respectively; the updated $$\texttt{self.ground_truth_label}$$ is sent to this $$\texttt{OutSpkToCls}$$ `Process`. 
+Note that in this time-step, $$\texttt{self.inp_img}$$ and $$\texttt{self.v}$$ is reset to all zeros in the $$\texttt{run_spk()}$$ phase of the $$\texttt{InpImgToSpk}$$ `Process`. Also, $$\texttt{post_guard()}$$ (in $$\texttt{InpImgToSpk}$$) evaluates to $$\texttt{True}$$ and the $$\texttt{run_post_mgmt()}$$ phase is called in the $$\texttt{InpImgToSpk}$$ `Process`, thereby, updating $$\texttt{self.inp_img}$$ and $$\texttt{self.ground_truth_label}$$ to the next image and ground truth (at index $$\texttt{self.curr_img_id}=1$$) respectively; the updated $$\texttt{self.ground_truth_label}$$ is sent to this $$\texttt{OutSpkToCls}$$ `Process`.
 
 Thus, in the $$\texttt{run_spk()}$$ phase of $$\texttt{OutSpkToCls}$$ `Process`, the spikes from the `netx`-obtained network corresponding to the _new_ test-image at $$\texttt{self.curr_img_id}=1$$ is processed. Although, $$\texttt{run_post_mgmt()}$$ is _not_ called because $$\texttt{post_guard()}$$ returns $$\texttt{False}$$.
 
@@ -345,7 +345,7 @@ self.img_to_spk.stop()
 
 # Closing Words
 
-This was quite a long tutorial, by the virtue of being end-to-end. At the time of writing this, I couldn't find any comprehensive end-to-end tutorial on [Lava's website](https://lava-nc.org/); rather, the tutorials are/were broken into training via `slayer` and then evaluation via `netx` (both separate). Nonetheless, those Lava tutorials formed the essential building blocks of this end-to-end tutorial. Here, after a short introduction to Lava, I showed you how to first build your SNN using SLAYER, followed by its **Direct Training** on GPU, and then eventually porting it to either Loihi simulation-hardware or Loihi physical-hardware for inference. I also described how the different **phases** of a `ProcessModel` execute every time-step; this intricate understanding of `Process` execution is quite necessary to build complex Lava networks. I hope that this tutorial serves as a foundation to your next awesome Neuromorphic Computing/Lava project! 
+This was quite a long tutorial, by the virtue of being end-to-end. At the time of writing this, I couldn't find any comprehensive end-to-end tutorial on [Lava's website](https://lava-nc.org/); rather, the tutorials are/were broken into training via `slayer` and then evaluation via `netx` (both separate). Nonetheless, those Lava tutorials formed the essential building blocks of this end-to-end tutorial. Here, after a short introduction to Lava, I showed you how to first build your SNN using SLAYER, followed by its **Direct Training** on GPU, and then eventually porting it to either Loihi simulation-hardware or Loihi physical-hardware for inference. I also described how the different **phases** of a `ProcessModel` execute every time-step; this intricate understanding of `Process` execution is quite necessary to build complex Lava networks. I hope that this tutorial serves as a foundation to your next awesome Neuromorphic Computing/Lava project!
 
 Feel free to comment below if you have any questions in understanding this tutorial or executing the code in [mnist-on-loihi](https://github.com/R-Gaurav/mnist-on-loihi) repository. And don't forget to leave a star on Github if this tutorial/repository helped you! Thank you for stopping by :).
 
