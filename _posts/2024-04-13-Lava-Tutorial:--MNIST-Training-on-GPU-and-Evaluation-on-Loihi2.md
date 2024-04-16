@@ -94,7 +94,7 @@ This class is fairly easy to understand, where I use the [Nengo/NEF](https://www
 
 $$J = \alpha\times<e.x> + \beta$$
 
-where $$J$$ is the input current to the encoding neuron, $$\alpha$$ and $$\beta$$ are its `gain` and `bias` values. Note that $$x$$ is the normalized pixel value to be encoded, and since it's non-negative, the value of the encoder $$e$$ is kept $$+1$$ here ($$<e.x>$$ denotes **dot** product); $\alpha$ and $\beta$ are set to $1$ and $0$ respectively. The generated spike trains are fed to the `SlayerDenseSNN`'s first **Hidden** layer.
+where $$J$$ is the input current to the encoding neuron, $$\alpha$$ and $$\beta$$ are its `gain` and `bias` values. Note that $$x$$ is the normalized pixel value to be encoded, and since it's non-negative, the value of the encoder $$e$$ is kept $$+1$$ here ($$<e.x>$$ denotes **dot** product); $$\alpha$$ and $$\beta$$ are set to $$1$$ and $$0$$ respectively. The generated spike trains are fed to the `SlayerDenseSNN`'s first **Hidden** layer.
 
 ## $$\texttt{SlayerDenseSNN}$$ Class
 The $$\texttt{SlayerDenseSNN}$$ is composed of following `Dense` blocks of Current Based (CUBA) neurons, with their $$\texttt{neuron_params}$$ as described below (code in $$\texttt{snns.py}$$):
