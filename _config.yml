@@ -3,7 +3,7 @@ title: R Gaurav's Blog
 email:
 description: "A place where I share my findings with you!"
 baseurl: ""
-url: "http://r-gaurav.github.io"
+url: "https://r-gaurav.github.io"
 github_username: r-gaurav
 author: R Gaurav
 markdown: kramdown
